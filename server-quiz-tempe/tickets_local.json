@@ -1,0 +1,18 @@
+[
+  {
+    "qrCode": "Y5X01g9AWhfSmj5BTjbhAErFJEk7scb7-VqSazrL0z_5W6ABqslrARtYkC-9nYWD_30sfVreDY0RP7ccjOL5L81Xv_Kw5Cv8Ns1Y-J-K1C9GBKsvVTcPHvI--8gzAfTh4Qx2MYCzQSx2HOuW8RX8-2ouKPG83CIzdBYMGiP4cnU",
+    "ticketId": "2ouKPG83CIzdBYMGiP4cnU",
+    "state": "used",
+    "usedAt": "01/10/2026, 21.59.50",
+    "usedByMachine": "GAME-01",
+    "finishedAt": "01/10/2026, 22.00.09"
+  },
+  {
+    "qrCode": "Y5X01g9AWhfSmj5BTjbhAErFJEk7scb7-VqSazrL0z_5W6ABqslrARtYkC-9nYWD_30sfVreDY0RP7ccjOL5L81Xv_Kw5Cv8Ns1Y-J-K1C9GBKsvVTcPHvI--8gzAfTh4Qx2MYCzQSx2HOuW8RX8-4sC4nJ2F2apS6sFPm16wog",
+    "ticketId": "4sC4nJ2F2apS6sFPm16wog",
+    "state": "used",
+    "usedAt": "01/10/2026, 22.01.56",
+    "usedByMachine": "GAME-01",
+    "finishedAt": "01/10/2026, 22.02.16"
+  }
+]
