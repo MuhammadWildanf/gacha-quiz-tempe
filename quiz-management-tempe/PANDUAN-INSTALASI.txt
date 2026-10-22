@@ -1,0 +1,104 @@
+PANDUAN INSTALASI - QUIZ MANAGEMENT TEMPE
+==========================================
+
+1. SYARAT DI PC BARU
+--------------------
+- Windows 10/11
+- Node.js LTS v20 (disarankan v20.19.0, sama dengan PC asal)
+  Cek: node -v  dan  npm -v
+- Tidak perlu install database terpisah (pakai SQLite, file prisma/dev.db)
+
+2. ISI RAR YANG HARUS ADA
+-------------------------
+Pastikan hasil extract berisi ini (jangan rar via git saja,
+karena file di bawah di-ignore .gitignore tapi WAJIB ada):
+
+  server.js
+  package.json
+  seed.js
+  .env                    <- WAJIB (DATABASE_URL, JWT_SECRET, PORT)
+  prisma/schema.prisma
+  prisma/migrations/
+  prisma/dev.db           <- WAJIB (database + semua data)
+  src/  (seluruh folder)
+  uploads/ (minimal ada .gitkeep)
+
+JANGAN sertakan node_modules/ (besar, install ulang saja).
+
+Contoh .env yang benar:
+  DATABASE_URL="file:./dev.db"
+  JWT_SECRET="supersecretkey123"
+  PORT=3011
+
+3. LANGKAH INSTALASI
+-------------------
+a. Extract rar ke folder, misal:
+   E:\web\2026\quiz-management-tempe
+
+b. Buka terminal (PowerShell) di folder itu, lalu:
+
+   npm install
+   npx prisma generate
+
+   Keterangan:
+   - npm install = install ulang node_modules
+   - prisma generate = build ulang Prisma Client sesuai OS baru
+     (tidak menghapus data, wajib dijalankan)
+
+c. Jalankan server:
+
+   node server.js
+
+   atau (mode auto-restart saat ngoding):
+
+   npm run dev
+
+d. Buka browser:
+   http://localhost:3011
+
+e. Login default (dari seed.js):
+   email    : admin@mail.com
+   password : admin123
+
+4. YANG JANGAN DILAKUKAN (BIAR DATA TIDAK HILANG)
+------------------------------------------------
+- Jangan hapus / timpa prisma/dev.db
+- Jangan jalankan:
+    npx prisma migrate reset
+    npx prisma db push --force-reset
+- Tidak perlu jalankan "node seed.js" di PC baru
+  (seed hanya untuk isi awal, dan sifatnya upsert/aman,
+  tapi tidak perlu jika dev.db sudah dibawa)
+- Sebelum copy/rar/compress project, STOP dulu servernya
+  (Ctrl+C), kalau tidak dev.db akan di-lock dan WinRAR error:
+  "Cannot open ... dev.db ... being used by another process"
+
+5. TROUBLESHOOTING
+-----------------
+a. WinRAR: Cannot open prisma/dev.db, being used by another process
+   -> Server masih jalan. Solusi:
+      tasklist | findstr node
+      taskkill /F /IM node.exe
+      (tutup juga Prisma Studio / DB Browser), lalu rar ulang.
+
+b. [nodemon] app crashed / EADDRINUSE: address already in use :::3011
+   -> Port 3011 masih dipakai proses node lama.
+      netstat -ano | findstr 3011
+      taskkill /F /PID <nomor_PID>
+      lalu npm run dev lagi.
+      Atau ganti PORT di .env.
+
+c. Error PrismaClient ... did not initialize / MODULE_NOT_FOUND
+   -> Jalankan ulang:
+      npm install
+      npx prisma generate
+
+d. Halaman tidak bisa dibuka / login gagal
+   -> Cek .env ada dan PORT=3011
+   -> Cek server masih jalan (harus ada log "Server running on port 3011")
+   -> Cek prisma/dev.db ada dan ukurannya tidak 0 KB
+
+e. Cek isi database langsung:
+     npx prisma studio
+
+Selesai.

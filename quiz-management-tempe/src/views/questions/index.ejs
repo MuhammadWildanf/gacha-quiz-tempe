@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Questions - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .question-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            gap: 20px;
+            position: relative;
+        }
+        .question-main {
+            flex: 1;
+        }
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+        .question-image {
+            width: 140px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .question-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .question-image span {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .choices-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .choice-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .choice-item.correct {
+            background: rgba(0, 240, 255, 0.08);
+            border-color: rgba(0, 240, 255, 0.3);
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+        .choice-bullet {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .choice-item.correct .choice-bullet {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+        .question-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: center;
+            align-self: stretch;
+            flex-shrink: 0;
+            width: 100px;
+        }
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: none;
+            text-align: center;
+            width: 100%;
+        }
+        .btn-warning {
+            background: rgba(255, 165, 0, 0.1);
+            color: #ffa500;
+            border: 1px solid rgba(255, 165, 0, 0.2);
+        }
+        .btn-warning:hover {
+            background: rgba(255, 165, 0, 0.25);
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: rgba(255, 0, 127, 0.1);
+            color: var(--accent-pink);
+            border: 1px solid rgba(255, 0, 127, 0.2);
+        }
+        .btn-danger:hover {
+            background: rgba(255, 0, 127, 0.25);
+            transform: translateY(-1px);
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                Quiz<span>Manager</span>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="/admin/dashboard" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/quizzes" class="sidebar-link active">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        <span>Quizzes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/gacha" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                        <span>Gacha Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/booths" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <span>Booths</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <a href="/auth/logout" class="sidebar-link" style="color: #ff007f;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <a href="/admin/quizzes" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back to Quizzes
+            </a>
+
+            <header class="header-container" style="margin-bottom: 20px;">
+                <div>
+                    <h1 class="page-title">Questions in: <%= quiz.title %></h1>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;"><%= quiz.description || 'No description provided' %></p>
+                </div>
+                <div>
+                    <a href="/admin/quizzes/<%= quiz.id %>/questions/create" class="btn" style="padding: 10px 20px; font-size: 14px; width: auto; text-decoration: none;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Add Question
+                    </a>
+                </div>
+            </header>
+
+            <!-- Questions list -->
+            <% if (questions && questions.length > 0) { %>
+                <% questions.forEach((q, idx) => { %>
+                    <div class="question-card">
+                        <div class="question-image">
+                            <% if (q.image) { %>
+                                <img src="<%= q.image %>" alt="Question Image">
+                            <% } else { %>
+                                <span>No Image</span>
+                            <% } %>
+                        </div>
+
+                        <div class="question-main">
+                            <div class="question-text">
+                                <%= idx + 1 %>. <%= q.question %>
+                                <span style="font-size: 12px; font-weight: normal; color: var(--accent-cyan); background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.15); padding: 2px 8px; border-radius: 12px; margin-left: 8px; vertical-align: middle;">
+                                    ⏱ <%= q.timer %>s
+                                </span>
+                            </div>
+
+                            <ul class="choices-list">
+                                <% 
+                                const bullets = ['A', 'B', 'C', 'D'];
+                                q.answers.forEach((ans, aIdx) => { 
+                                %>
+                                    <li class="choice-item <%= ans.isCorrect ? 'correct' : '' %>">
+                                        <span class="choice-bullet"><%= bullets[aIdx] %></span>
+                                        <span><%= ans.answerText %></span>
+                                    </li>
+                                <% }) %>
+                            </ul>
+                        </div>
+
+                        <div class="question-actions">
+                            <a href="/admin/quizzes/<%= quiz.id %>/questions/edit/<%= q.id %>" class="btn-sm btn-warning">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                Edit
+                            </a>
+                            <form action="/admin/quizzes/<%= quiz.id %>/questions/delete/<%= q.id %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this question?');" style="width: 100%;">
+                                <button type="submit" class="btn-sm btn-danger">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="table-card" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                    No questions added to this quiz yet. Get started by clicking "Add Question".
+                </div>
+            <% } %>
+        </main>
+    </div>
+</body>
+</html>

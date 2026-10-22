@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Booth - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 30px; max-width: 600px; box-shadow: var(--shadow-lg); }
+        .btn-group { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--glass-border); width: auto; padding: 12px 24px; box-shadow: none; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; border-radius: var(--border-radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">Quiz<span>Manager</span></div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="/admin/dashboard" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/quizzes" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        <span>Quizzes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/gacha" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                        <span>Gacha Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/booths" class="sidebar-link active">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <span>Booths</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="/auth/logout" class="sidebar-link" style="color: #ff007f;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header-container">
+                <div><h1 class="page-title">Create New Booth</h1></div>
+            </header>
+
+            <div class="form-card">
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="error-message"><%= error %></div>
+                <% } %>
+
+                <form action="/admin/booths/create" method="POST">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Nama Booth</label>
+                        <input type="text" id="name" name="name" class="form-input" placeholder="Contoh: Booth 1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Deskripsi (Opsional)</label>
+                        <textarea id="description" name="description" class="form-input" rows="3" placeholder="Deskripsi singkat booth ini..."></textarea>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn" style="width: auto; padding: 12px 30px;">Simpan Booth</button>
+                        <a href="/admin/booths" class="btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

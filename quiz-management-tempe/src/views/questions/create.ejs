@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Question - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 700px;
+            box-shadow: var(--shadow-lg);
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            width: auto;
+            padding: 12px 24px;
+            box-shadow: none;
+            text-decoration: none;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: var(--border-radius);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .answers-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 20px;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 20px;
+        }
+        .answer-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .radio-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .radio-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .radio-input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+        .file-upload-wrapper {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed var(--glass-border);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        .file-upload-wrapper:hover {
+            border-color: var(--accent-cyan);
+        }
+        .file-upload-input {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .file-upload-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .file-upload-text span {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                Quiz<span>Manager</span>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="/admin/dashboard" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/quizzes" class="sidebar-link active">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        <span>Quizzes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/gacha" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                        <span>Gacha Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/booths" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <span>Booths</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <a href="/auth/logout" class="sidebar-link" style="color: #ff007f;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <a href="/admin/quizzes/<%= quiz.id %>/questions" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back to Questions
+            </a>
+
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Add Question to: <%= quiz.title %></h1>
+                </div>
+            </header>
+
+            <div class="form-card">
+                <% if (error) { %>
+                    <div class="error-message">
+                        <%= error %>
+                    </div>
+                <% } %>
+
+                <form action="/admin/quizzes/<%= quiz.id %>/questions/create" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="question" class="form-label">Question Text</label>
+                        <input type="text" id="question" name="question" class="form-input" placeholder="e.g. Siapa Presiden Pertama Indonesia?" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Question Image (Optional)</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" name="image" class="file-upload-input" accept="image/*" id="imageInput">
+                            <div class="file-upload-text" id="fileUploadText">
+                                Drag & drop image here or <span>browse</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timer" class="form-label">Timer Limit (seconds)</label>
+                        <input type="number" id="timer" name="timer" class="form-input" value="15" min="5" max="120" required>
+                    </div>
+
+                    <div class="answers-grid">
+                        <h3 style="font-size: 15px; font-weight: 600; color: #fff;">Answer Choices (Check the radio button for the correct one)</h3>
+                        
+                        <!-- Choice 1 -->
+                        <div class="answer-row">
+                            <div class="radio-container">
+                                <input type="radio" name="correctAnswer" value="0" class="radio-input" id="correct0" required checked>
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="text" name="answer1" class="form-input" placeholder="Choice A" required>
+                            </div>
+                        </div>
+
+                        <!-- Choice 2 -->
+                        <div class="answer-row">
+                            <div class="radio-container">
+                                <input type="radio" name="correctAnswer" value="1" class="radio-input" id="correct1">
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="text" name="answer2" class="form-input" placeholder="Choice B" required>
+                            </div>
+                        </div>
+
+                        <!-- Choice 3 -->
+                        <div class="answer-row">
+                            <div class="radio-container">
+                                <input type="radio" name="correctAnswer" value="2" class="radio-input" id="correct2">
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="text" name="answer3" class="form-input" placeholder="Choice C" required>
+                            </div>
+                        </div>
+
+                        <!-- Choice 4 -->
+                        <div class="answer-row">
+                            <div class="radio-container">
+                                <input type="radio" name="correctAnswer" value="3" class="radio-input" id="correct3">
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="text" name="answer4" class="form-input" placeholder="Choice D" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn" style="width: auto; padding: 12px 30px;">Add Question</button>
+                        <a href="/admin/quizzes/<%= quiz.id %>/questions" class="btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Simple filename preview logic
+        const fileInput = document.getElementById('imageInput');
+        const uploadText = document.getElementById('fileUploadText');
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length > 0) {
+                uploadText.innerHTML = `Selected file: <span style="color: var(--accent-cyan); font-weight: 600;">\${fileInput.files[0].name}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>

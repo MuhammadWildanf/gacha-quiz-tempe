@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+// 1. Model Category Baru
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique // Contoh: "IMMERSIVE ROOM", "TEMPE WARRIOR"
+  description String?
+  
+  questions   Question[]
+
+  createdAt   DateTime   @default(now())
+}
+
+model Quiz {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      Boolean    @default(true)
+
+  questions   Question[]
+
+  createdAt   DateTime   @default(now())
+}
+
+model Question {
+  id          Int        @id @default(autoincrement())
+
+  quizId      Int
+  quiz        Quiz       @relation(fields: [quizId], references: [id])
+
+  // 2. Relasi ke Category
+  categoryId  Int?       // Dibuat optional (?) agar tidak error saat migrasi data lama
+  category    Category?  @relation(fields: [categoryId], references: [id])
+
+  question    String
+  image       String?
+  timer       Int        @default(15)
+
+  answers     Answer[]
+
+  createdAt   DateTime   @default(now())
+}
+
+model Answer {
+  id          Int        @id @default(autoincrement())
+
+  questionId  Int
+  question    Question   @relation(fields: [questionId], references: [id])
+
+  answerText  String
+  isCorrect   Boolean    @default(false)
+
+  createdAt   DateTime   @default(now())
+}
+
+model GachaSetting {
+  id                Int      @id @default(1)
+  minCorrectAnswers Int      @default(3)
+  updatedAt         DateTime @updatedAt
+}
+
+model Booth {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  status      Boolean     @default(true)
+  description String?
+  createdAt   DateTime    @default(now())
+
+  gachaLogs   GachaLog[]
+  answerLogs  AnswerLog[]
+}
+
+model AnswerLog {
+  id         Int      @id @default(autoincrement())
+  boothId    Int
+  booth      Booth    @relation(fields: [boothId], references: [id])
+  quizId     Int
+  questionId Int
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+}
+
+model GachaLog {
+  id             Int      @id @default(autoincrement())
+  boothId        Int?
+  booth          Booth?   @relation(fields: [boothId], references: [id])
+  quizId         Int
+  score          Int
+  totalQuestions Int?
+  createdAt      DateTime @default(now())
+}

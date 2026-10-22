@@ -1,0 +1,17 @@
+# Dependency directory
+node_modules/
+
+# Local environment variables containing credentials/secrets
+.env
+
+# SQLite local database files
+*.db
+*.db-journal
+
+# Uploaded images/files (ignore contents but keep folder structure via .gitkeep)
+uploads/*
+!uploads/.gitkeep
+
+# OS system files
+.DS_Store
+Thumbs.db
