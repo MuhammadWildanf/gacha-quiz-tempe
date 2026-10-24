@@ -1,0 +1,18 @@
+# ============================================================
+#  Gacha System — Root .gitignore
+# ============================================================
+
+# Unity Build — jangan di-push ke GitHub (besar, binary)
+# Copy manual ke PC baru via USB/Drive/dll
+UnityBuild/
+
+# Log files
+logs/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Temp
+*.tmp
+*.temp
