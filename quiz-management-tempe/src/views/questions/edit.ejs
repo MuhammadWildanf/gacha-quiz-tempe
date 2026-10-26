@@ -120,6 +120,26 @@
             object-fit: cover;
             border: 1px solid var(--glass-border);
         }
+        .select-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        .select-input option {
+            background: #181926;
+            color: var(--text-main);
+        }
+        .select-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            background: rgba(255, 255, 255, 0.08);
+        }
     </style>
 </head>
 <body>
@@ -187,58 +207,91 @@
 
                 <form action="/admin/quizzes/<%= quiz.id %>/questions/edit/<%= question.id %>" method="POST" enctype="multipart/form-data">
                     <div class="form-group">
-                        <label for="question" class="form-label">Question Text</label>
-                        <input type="text" id="question" name="question" class="form-input" value="<%= question.question %>" required>
+                        <label for="categoryId" class="form-label">Category</label>
+                        <select id="categoryId" name="categoryId" class="select-input">
+                            <option value="">-- No Category / General --</option>
+                            <% if (typeof categories !== 'undefined' && categories) { %>
+                                <% categories.forEach(cat => { %>
+                                    <option value="<%= cat.id %>" <%= (question.categoryId === cat.id) ? 'selected' : '' %>>
+                                        <%= cat.name %>
+                                    </option>
+                                <% }) %>
+                            <% } %>
+                        </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Question Image</label>
+                        <label for="question" class="form-label">Question Text</label>
+                        <input type="text" id="question" name="question" class="form-input" value="<%= question.question %>" placeholder="Question text">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Question Image (Optional)</label>
                         <div class="file-upload-wrapper">
                             <input type="file" name="image" class="file-upload-input" accept="image/*" id="imageInput">
                             <div class="file-upload-text" id="fileUploadText">
-                                Drag & drop image here or <span>browse</span> to replace
+                                Drag & drop image here or <span>browse</span> to replace (Leave empty to keep current)
                             </div>
                         </div>
                         <% if (question.image) { %>
-                            <div class="preview-img-container">
-                                <img src="<%= question.image %>" class="preview-img" alt="Current Image">
-                                <span style="font-size: 13px; color: var(--text-muted);">Current image uploaded</span>
+                            <div class="preview-img-container" style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="<%= question.image %>" class="preview-img" alt="Current Image">
+                                    <span style="font-size: 13px; color: var(--text-muted);">Current image uploaded</span>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #ff007f; cursor: pointer;">
+                                    <input type="checkbox" name="removeImage" value="true" style="accent-color: #ff007f;">
+                                    Delete current image
+                                </label>
                             </div>
                         <% } %>
                     </div>
 
                     <div class="form-group">
                         <label for="timer" class="form-label">Timer Limit (seconds)</label>
-                        <input type="number" id="timer" name="timer" class="form-input" value="<%= question.timer %>" min="5" max="120" required>
+                        <input type="number" id="timer" name="timer" class="form-input" value="<%= question.timer %>" min="5" max="120">
                     </div>
 
                     <div class="answers-grid">
-                        <h3 style="font-size: 15px; font-weight: 600; color: #fff;">Answer Choices (Check the radio button for the correct one)</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 15px; font-weight: 600; color: #fff; margin: 0;">Answer Choices (Check the radio button for the correct one)</h3>
+                            <span style="font-size: 12px; color: var(--text-muted);">Min. 2 choices required</span>
+                        </div>
                         
-                        <% question.answers.forEach((ans, idx) => { %>
+                        <% 
+                        const bullets = ['A', 'B', 'C', 'D'];
+                        const ansList = question.answers || [];
+                        let correctIdx = ansList.findIndex(a => a.isCorrect);
+                        if (correctIdx === -1) correctIdx = 0;
+
+                        for (let i = 0; i < 4; i++) {
+                            const ans = ansList[i];
+                            const val = ans ? ans.answerText : '';
+                            const isReq = (i < 2);
+                            const isChecked = (correctIdx === i);
+                        %>
                             <div class="answer-row">
-                                <div class="radio-container">
+                                <div class="radio-container" title="Mark Choice <%= bullets[i] %> as correct answer">
                                     <input 
                                         type="radio" 
                                         name="correctAnswer" 
-                                        value="<%= idx %>" 
+                                        value="<%= i %>" 
                                         class="radio-input" 
-                                        id="correct<%= idx %>"
-                                        <%= ans.isCorrect ? 'checked' : '' %>
-                                        required
+                                        id="correct<%= i %>"
+                                        <%= isChecked ? 'checked' : '' %>
                                     >
                                 </div>
                                 <div style="flex: 1;">
                                     <input 
                                         type="text" 
-                                        name="answer<%= idx + 1 %>" 
+                                        name="answer<%= i + 1 %>" 
                                         class="form-input" 
-                                        value="<%= ans.answerText %>" 
-                                        required
+                                        value="<%= val %>" 
+                                        placeholder="Choice <%= bullets[i] %> <%= isReq ? '(Required)' : '(Optional)' %>"
                                     >
                                 </div>
                             </div>
-                        <% }) %>
+                        <% } %>
                     </div>
 
                     <div class="btn-group">

@@ -1,4 +1,6 @@
 const prisma = require('../config/database');
+const path = require('path');
+const fs = require('fs');
 
 // List Quizzes
 const getQuizzes = async (req, res) => {
@@ -76,20 +78,17 @@ const postEditQuiz = async (req, res) => {
     const { title, description, status } = req.body;
 
     try {
-        if (!title) {
-            const quiz = await prisma.quiz.findUnique({ where: { id: parseInt(id) } });
-            return res.render('quizzes/edit', {
-                quiz,
-                error: 'Title is required',
-                path: 'quizzes'
-            });
-        }
+        const existing = await prisma.quiz.findUnique({ where: { id: parseInt(id) } });
+        if (!existing) return res.status(404).send('Quiz not found');
+
+        // Jika title diisi gunakan yang baru, jika kosong tetap pertahankan title lama
+        const finalTitle = (title && title.trim()) ? title.trim() : existing.title;
 
         await prisma.quiz.update({
             where: { id: parseInt(id) },
             data: {
-                title,
-                description,
+                title: finalTitle,
+                description: description !== undefined ? description.trim() : existing.description,
                 status: status === 'true' || status === true
             }
         });
@@ -113,6 +112,12 @@ const deleteQuiz = async (req, res) => {
 
         // Delete questions and answers first
         for (const question of questions) {
+            if (question.image) {
+                const filePath = path.join(__dirname, '../../', question.image);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            }
             await prisma.answer.deleteMany({
                 where: { questionId: question.id }
             });

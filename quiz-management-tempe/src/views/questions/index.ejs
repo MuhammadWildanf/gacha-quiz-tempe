@@ -221,6 +221,11 @@
                                 <span style="font-size: 12px; font-weight: normal; color: var(--accent-cyan); background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.15); padding: 2px 8px; border-radius: 12px; margin-left: 8px; vertical-align: middle;">
                                     ⏱ <%= q.timer %>s
                                 </span>
+                                <% if (q.category) { %>
+                                    <span style="font-size: 12px; font-weight: 500; color: #ff007f; background: rgba(255, 0, 127, 0.1); border: 1px solid rgba(255, 0, 127, 0.25); padding: 2px 8px; border-radius: 12px; margin-left: 6px; vertical-align: middle;">
+                                        🏷️ <%= q.category.name %>
+                                    </span>
+                                <% } %>
                             </div>
 
                             <ul class="choices-list">
