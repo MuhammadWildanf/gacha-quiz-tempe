@@ -8,6 +8,7 @@
     "test-scan": "node test-unity.js"
   },
   "dependencies": {
+    "dotenv": "^18.0.9",
     "express": "^4.22.2",
     "qrcode": "^1.5.4",
     "ws": "^8.21.3"

@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "id": 101,
+    "name": "Budi Santoso",
+    "company": "PT. Maju Bersama",
+    "qrCode": "TIK-VIP-001",
+    "ticketType": "VIP",
+    "maxPlay": 3,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": 102,
+    "name": "Siti Aminah",
+    "company": "CV. Sukses Jaya",
+    "qrCode": "TIK-REG-002",
+    "ticketType": "REGULER",
+    "maxPlay": 1,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": 103,
+    "name": "Andi Saputra",
+    "company": "PT. Berkah Abadi",
+    "qrCode": "TIK-REG-003",
+    "ticketType": "REGULER",
+    "maxPlay": 1,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": 104,
+    "name": "Rina Marlina (Sudah Terpakai)",
+    "company": "Visitor",
+    "qrCode": "TIK-USED-004",
+    "ticketType": "REGULER",
+    "maxPlay": 0,
+    "status": "USED"
+  },
+  {
+    "id": 105,
+    "name": "test",
+    "company": "test",
+    "qrCode": "TPM-261026-000001-2342",
+    "ticketType": "REGULER",
+    "maxPlay": 1,
+    "status": "AVAILABLE"
+  }
+]

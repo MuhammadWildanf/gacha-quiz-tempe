@@ -14,6 +14,8 @@ public static class SettingsStore
     private const string K_BAUD = "mp_cfg_baud";
     private const string K_STOCK = "mp_cfg_stock";
     private const string K_STOCK_LOW = "mp_cfg_stock_low";
+    private const string K_PPC = "mp_cfg_ppc";    // pointsPerCorrect
+    private const string K_MAXQ = "mp_cfg_maxq";  // maxQuestions
 
     public static bool HasSaved()
     {
@@ -35,6 +37,10 @@ public static class SettingsStore
         if (cfg.ballStock < 0) cfg.ballStock = 0;
         cfg.ballLowThreshold = PlayerPrefs.GetInt(K_STOCK_LOW, cfg.ballLowThreshold);
         if (cfg.ballLowThreshold < 0) cfg.ballLowThreshold = 5;
+        cfg.pointsPerCorrect = PlayerPrefs.GetInt(K_PPC, cfg.pointsPerCorrect);
+        if (cfg.pointsPerCorrect < 1) cfg.pointsPerCorrect = 1;
+        cfg.maxQuestions = PlayerPrefs.GetInt(K_MAXQ, cfg.maxQuestions);
+        if (cfg.maxQuestions < 0) cfg.maxQuestions = 0;
         return cfg;
     }
 
@@ -49,6 +55,8 @@ public static class SettingsStore
         PlayerPrefs.SetInt(K_BAUD, cfg.dispenserBaudRate);
         PlayerPrefs.SetInt(K_STOCK, Mathf.Max(0, cfg.ballStock));
         PlayerPrefs.SetInt(K_STOCK_LOW, Mathf.Max(0, cfg.ballLowThreshold));
+        PlayerPrefs.SetInt(K_PPC, Mathf.Max(1, cfg.pointsPerCorrect));
+        PlayerPrefs.SetInt(K_MAXQ, Mathf.Max(0, cfg.maxQuestions));
         PlayerPrefs.Save();
         Debug.Log("[Settings] Tersimpan ke PlayerPrefs (permanen per mesin).");
     }
@@ -64,6 +72,8 @@ public static class SettingsStore
         PlayerPrefs.DeleteKey(K_BAUD);
         PlayerPrefs.DeleteKey(K_STOCK);
         PlayerPrefs.DeleteKey(K_STOCK_LOW);
+        PlayerPrefs.DeleteKey(K_PPC);
+        PlayerPrefs.DeleteKey(K_MAXQ);
         PlayerPrefs.Save();
     }
 }

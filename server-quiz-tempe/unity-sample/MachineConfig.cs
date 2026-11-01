@@ -7,8 +7,8 @@ using System;
 [Serializable]
 public class MachineConfig
 {
-    public string serverWsUrl = "ws://192.168.88.32:3005";
-    public string quizApiUrl = "http://192.168.88.32:3011/api/quiz";
+    public string serverWsUrl = "ws://localhost:3005";
+    public string quizApiUrl = "http://localhost:3011/api/quiz";
     public string machineId = "GAME-01";
     public string dispenserPort = "COM3";
     public bool dispenserAutoDetect = false;
@@ -17,6 +17,10 @@ public class MachineConfig
     // Berkurang 1 tiap menang beneran (PUSH terkirim). 0 = tolak trigger.
     public int ballStock = 50;
     public int ballLowThreshold = 5;
+
+    // Pengaturan game kuis — override Inspector, berlaku tanpa rebuild.
+    public int pointsPerCorrect = 20; // poin per jawaban benar
+    public int maxQuestions = 5;      // jumlah soal per sesi (0 = semua)
 
     public MachineConfig Clone()
     {

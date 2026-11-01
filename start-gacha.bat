@@ -15,7 +15,7 @@ setlocal EnableDelayedExpansion
 
 REM ---- KONFIGURASI ----
 REM Isi manual jika auto-detect gagal. Contoh: set "UNITY_EXE=E:\Game\Gacha.exe"
-set "UNITY_EXE=E:\web\2026\tempe-park\Gacha\UnityBuild\quiz-gacha-tempe 1.4.exe"
+set "UNITY_EXE=E:\web\2026\tempe-park\Gacha\UnityBuild\quiz-gacha-tempe 1.6.exe"
 REM Argumen Unity fullscreen
 set "UNITY_ARGS=-screen-fullscreen 1"
 REM Maks tunggu server siap (detik)
@@ -28,6 +28,14 @@ set "BASE_DIR=E:\web\2026\tempe-park\Gacha"
 set "DIR_QUIZ=%BASE_DIR%\server-quiz-tempe"
 set "DIR_MGMT=%BASE_DIR%\quiz-management-tempe"
 set "LOG_DIR=%BASE_DIR%\logs"
+
+REM Cegah script jalan ganda secara bersamaan (Mutex lock)
+set "LOCK_FILE=%TEMP%\gacha_startup.lock"
+if exist "%LOCK_FILE%" (
+  echo [INFO] start-gacha.bat sudah sedang berjalan, skip instance ini.
+  exit /b 0
+)
+echo %date% %time% > "%LOCK_FILE%"
 
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>nul
 set "LOG_QUIZ=%LOG_DIR%\server-3005.log"
@@ -69,7 +77,7 @@ call :log "[INFO] Menunggu server-quiz siap (max %MAX_WAIT% detik)..."
 set "READY3005=0"
 for /L %%i in (1,1,%MAX_WAIT%) do (
   if "!READY3005!"=="1" goto :check3011
-  curl -s -o nul --max-time 2 http://127.0.0.1:3005/api/config >nul 2>nul
+  curl -s -f -o nul --max-time 2 http://127.0.0.1:3005/api/config >nul 2>nul
   if !errorlevel! EQU 0 (
     set "READY3005=1"
     call :log "[OK] server-quiz SIAP setelah %%i detik."
@@ -84,16 +92,18 @@ if "!READY3005!"=="0" (
   call :log "[WARN] Cek log: %LOG_QUIZ%"
 )
 
-REM ---- 4. Tunggu quiz-management 3011 SIAP (cek /api/quiz, bukan hanya /) ----
-REM   Penting: cek /api/quiz memastikan Prisma DB sudah ready dan quiz bisa diakses.
+REM ---- 4. Tunggu quiz-management 3011 SIAP (cek /api/quiz dengan HTTP 200 via -f) ----
+REM   Penting: -f memastikan respon bukan 404/500 melainkan 200 OK dengan data DB siap.
 REM   Ini mencegah race condition di mana Unity fetch soal sebelum server benar-benar siap.
 set "READY3011=0"
 for /L %%i in (1,1,30) do (
   if "!READY3011!"=="1" goto :rununity
-  curl -s -o nul --max-time 2 http://127.0.0.1:3011/api/quiz >nul 2>nul
+  curl -s -f -o nul --max-time 2 http://localhost:3011/api/quiz >nul 2>nul
   if !errorlevel! EQU 0 (
     set "READY3011=1"
     call :log "[OK] quiz-management + DB SIAP setelah %%i detik."
+    REM Beri jeda 2 detik ekstra agar server benar-benar idle dan siap terima koneksi Unity
+    timeout /t 2 /nobreak >nul
     goto :rununity
   )
   timeout /t 1 /nobreak >nul
@@ -141,6 +151,9 @@ start "" "%UNITY_EXE%" %UNITY_ARGS%
 
 call :log "[OK] Selesai. Server di background, Unity tampil di TV."
 call :log "[INFO] Log tersimpan di: %LOG_DIR%"
+
+REM Hapus lock file setelah proses start selesai
+if exist "%LOCK_FILE%" del "%LOCK_FILE%" >nul 2>nul
 
 if "%AUTO_CLOSE%"=="1" (
   timeout /t 3 /nobreak >nul

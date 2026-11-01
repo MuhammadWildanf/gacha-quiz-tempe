@@ -89,8 +89,132 @@ function generateTicketQR(data) {
 }
 
 // ==========================================
-// 1. API UNTUK LOCAL SERVER (SYNC)
+// 1. API UNTUK LOCAL SERVER (SYNC & REAL-TIME VALIDATION)
 // ==========================================
+const VENDOR_SECRET_TOKEN = process.env.VENDOR_SECRET_TOKEN || "mock-secret-vendor-token-12345";
+
+// Middleware verifikasi Bearer Token / Secret Token dari Vendor
+function requireVendorAuth(req, res, next) {
+    const authHeader = req.headers["authorization"] || req.headers["x-secret-token"];
+    if (!authHeader) {
+        console.log("⛔ [VENDOR API] Request ditolak: Header Authorization / Secret-Token tidak ada.");
+        return res.status(401).json({
+            success: false,
+            valid: false,
+            reason: "UNAUTHORIZED",
+            message: "Missing Authorization header or Secret-Token"
+        });
+    }
+
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader.trim();
+    if (token !== VENDOR_SECRET_TOKEN) {
+        console.log(`⛔ [VENDOR API] Request ditolak: Token tidak valid (${token}).`);
+        return res.status(403).json({
+            success: false,
+            valid: false,
+            reason: "FORBIDDEN",
+            message: "Invalid Secret/Bearer Token"
+        });
+    }
+
+    next();
+}
+
+// ENDPOINT REAL-TIME VALIDASI TIKET DARI UNITY / LOCAL SERVER
+app.post("/api/v1/validate-ticket", requireVendorAuth, (req, res) => {
+    const { code, deviceId } = req.body;
+    console.log(`\n🔍 [VENDOR API] Validasi tiket dari device [${deviceId}]: code = "${code}"`);
+
+    if (!code) {
+        return res.status(400).json({
+            success: false,
+            valid: false,
+            reason: "INVALID_PARAM",
+            message: "Parameter 'code' wajib disertakan"
+        });
+    }
+
+    const db = readVendorDB();
+    const guest = db.find(g => g.qrCode === code);
+
+    if (!guest) {
+        console.log(`❌ [VENDOR API] Tiket "${code}" TIDAK TERDAFTAR di sistem vendor.`);
+        return res.status(404).json({
+            success: false,
+            valid: false,
+            reason: "NOT_FOUND",
+            message: "Tiket tidak terdaftar di sistem vendor."
+        });
+    }
+
+    if (guest.status === "USED" || (guest.maxPlay !== undefined && guest.maxPlay <= 0)) {
+        console.log(`❌ [VENDOR API] Tiket "${code}" (${guest.name}) SUDAH HABIS / PERNAH DIGUNAKAN.`);
+        return res.status(400).json({
+            success: false,
+            valid: false,
+            reason: "ALREADY_USED",
+            message: `Tiket milik ${guest.name} sudah pernah digunakan.`,
+            data: {
+                ticketId: guest.id,
+                guestName: guest.name,
+                ticketType: guest.ticketType,
+                status: guest.status
+            }
+        });
+    }
+
+    console.log(`✅ [VENDOR API] Tiket VALID! Pengunjung: ${guest.name} (${guest.ticketType}), Sisa main: ${guest.maxPlay}x`);
+    return res.json({
+        success: true,
+        valid: true,
+        reason: "VALID",
+        message: `Tiket valid untuk ${guest.name}`,
+        data: {
+            ticketId: String(guest.id),
+            guestName: guest.name,
+            company: guest.company,
+            ticketType: guest.ticketType,
+            remainingPlay: guest.maxPlay
+        }
+    });
+});
+
+// ENDPOINT KLAIM / GAME FINISH (Potong kuota / tandai status used)
+app.post("/api/v1/claim-ticket", requireVendorAuth, (req, res) => {
+    const { code, deviceId, score, isWin } = req.body;
+    console.log(`\n🎟️ [VENDOR API] Claim tiket [${code}] dari device [${deviceId}], score: ${score}, isWin: ${isWin}`);
+
+    const db = readVendorDB();
+    const guest = db.find(g => g.qrCode === code);
+
+    if (!guest) {
+        return res.status(404).json({ success: false, message: "Tiket tidak ditemukan" });
+    }
+
+    // Kurangi jatah main
+    if (guest.maxPlay > 1) {
+        guest.maxPlay -= 1;
+        console.log(`ℹ️ [VENDOR API] Kuota main ${guest.name} berkurang. Sisa: ${guest.maxPlay}x`);
+    } else {
+        guest.maxPlay = 0;
+        guest.status = "USED";
+        console.log(`🔒 [VENDOR API] Kuota main ${guest.name} habis. Status diubah menjadi USED.`);
+    }
+
+    writeVendorDB(db);
+
+    return res.json({
+        success: true,
+        message: "Tiket berhasil di-claim di sistem vendor",
+        data: {
+            ticketId: guest.id,
+            guestName: guest.name,
+            status: guest.status,
+            remainingPlay: guest.maxPlay
+        }
+    });
+});
+
 app.get("/api/get-all-tickets", (req, res) => {
     console.log("🏢 [VENDOR] Local Server sedang menarik (sync) data tiket...");
     res.json({

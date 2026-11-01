@@ -26,22 +26,6 @@ public class ScanToastNotifier : MonoBehaviour
     [SerializeField] private Color errorColor = new Color(0.85f, 0.25f, 0.25f, 1f);
     [SerializeField] private Color infoColor = new Color(0.25f, 0.5f, 0.9f, 1f);
 
-    [Header("Opsi")]
-    [Tooltip("MATI untuk kasus kamu: hanya tampilkan gagal/offline/sudah dipakai. Valid langsung masuk game tanpa toast.")]
-    [SerializeField] private bool showValidToast = false;
-
-    [Header("Config (disarankan)")]
-    [Tooltip("Kalau diisi, semua kalimat diambil dari asset ini. Kalau kosong, pakai fallback di bawah.")]
-    [SerializeField] private ScanNotifConfig config;
-
-    [Header("Fallback kalau Config kosong (jangan edit kalau sudah pakai Config)")]
-    [TextArea] public string msgScanUlang = "Tiket tidak terbaca. Silakan scan ulang dengan jelas.";
-    [TextArea] public string msgBukanEvent = "QR tidak valid. Gunakan tiket resmi.";
-    [TextArea] public string msgSudahDipakai = "Tiket ini sudah digunakan.";
-    [TextArea] public string msgDipakaiMesinLain = "Tiket sedang dipakai di mesin lain.";
-    [TextArea] public string msgOffline = "Mesin sedang offline. Mohon hubungi petugas.";
-    [TextArea] public string msgGagalKirim = "Gagal menghubungi server. Coba scan lagi.";
-
     private Coroutine _routine;
 
     private void Awake()
@@ -54,6 +38,10 @@ public class ScanToastNotifier : MonoBehaviour
         toastGroup.interactable = false;
         toastGroup.blocksRaycasts = false;
     }
+
+    [Header("Opsi")]
+    [Tooltip("MATI untuk kasus kamu: hanya tampilkan gagal/offline/sudah dipakai. Valid langsung masuk game tanpa toast.")]
+    [SerializeField] private bool showValidToast = false;
 
     private void OnEnable()
     {
@@ -72,6 +60,18 @@ public class ScanToastNotifier : MonoBehaviour
         session.OnConnectionChanged.RemoveListener(ShowInfo);
         session.OnDispenserStatus.RemoveListener(ShowDispenser);
     }
+
+    [Header("Config (disarankan)")]
+    [Tooltip("Kalau diisi, semua kalimat diambil dari asset ini. Kalau kosong, pakai fallback di bawah.")]
+    [SerializeField] private ScanNotifConfig config;
+
+    [Header("Fallback kalau Config kosong (jangan edit kalau sudah pakai Config)")]
+    [TextArea] public string msgScanUlang = "Tiket tidak terbaca. Silakan scan ulang dengan jelas.";
+    [TextArea] public string msgBukanEvent = "QR tidak valid. Gunakan tiket resmi.";
+    [TextArea] public string msgSudahDipakai = "Tiket ini sudah digunakan.";
+    [TextArea] public string msgDipakaiMesinLain = "Tiket sedang dipakai di mesin lain.";
+    [TextArea] public string msgOffline = "Mesin sedang offline. Mohon hubungi petugas.";
+    [TextArea] public string msgGagalKirim = "Gagal menghubungi server. Coba scan lagi.";
 
     private string Msg(string fallback, System.Func<ScanNotifConfig, string> fromConfig)
     {

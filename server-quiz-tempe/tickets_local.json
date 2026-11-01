@@ -14,5 +14,53 @@
     "usedAt": "01/10/2026, 22.01.56",
     "usedByMachine": "GAME-01",
     "finishedAt": "01/10/2026, 22.02.16"
+  },
+  {
+    "qrCode": "TIK-VIP-001",
+    "ticketId": "101",
+    "guestName": "Budi Santoso",
+    "ticketType": "VIP",
+    "scanMode": "VENDOR_API",
+    "state": "used",
+    "usedAt": "26/10/2026, 20.19.19",
+    "usedByMachine": "GAME-01",
+    "finishedAt": "26/10/2026, 20.23.12",
+    "score": 60,
+    "maxScore": 100,
+    "isWin": false,
+    "prizeTier": "",
+    "dispenseStatus": "skipped"
+  },
+  {
+    "qrCode": "TIK-REG-003",
+    "ticketId": "103",
+    "guestName": "Andi Saputra",
+    "ticketType": "REGULER",
+    "scanMode": "VENDOR_API",
+    "state": "used",
+    "usedAt": "26/10/2026, 20.23.45",
+    "usedByMachine": "GAME-01",
+    "finishedAt": "26/10/2026, 20.24.16",
+    "score": 100,
+    "maxScore": 100,
+    "isWin": true,
+    "prizeTier": "HADIAH",
+    "dispenseStatus": "pending_dispense"
+  },
+  {
+    "qrCode": "TIK-REG-002",
+    "ticketId": "102",
+    "guestName": "Siti Aminah",
+    "ticketType": "REGULER",
+    "scanMode": "VENDOR_API",
+    "state": "used",
+    "usedAt": "26/10/2026, 20.24.28",
+    "usedByMachine": "GAME-01",
+    "finishedAt": "26/10/2026, 20.24.54",
+    "score": 60,
+    "maxScore": 100,
+    "isWin": false,
+    "prizeTier": "",
+    "dispenseStatus": "skipped"
   }
 ]

@@ -32,6 +32,12 @@ public class SettingsPanel : MonoBehaviour
     [Tooltip("Isi sesuai bola di tabung (misal 50). Kalau kosong di Inspector, stok tetap jalan via Save.")]
     [SerializeField] private TMP_InputField stockInput;
 
+    [Header("Input Game (opsional — boleh kosong)")]
+    [Tooltip("Poin per jawaban benar (misal 20). Kosong = pertahankan nilai sebelumnya.")]
+    [SerializeField] private TMP_InputField pointsPerCorrectInput;
+    [Tooltip("Jumlah soal per sesi (0 = semua soal). Kosong = pertahankan nilai sebelumnya.")]
+    [SerializeField] private TMP_InputField maxQuestionsInput;
+
     [Header("Label status")]
     [SerializeField] private TMP_Text wsStatusText;
     [SerializeField] private TMP_Text dispenserStatusText;
@@ -201,6 +207,9 @@ public class SettingsPanel : MonoBehaviour
         if (machineIdInput != null) machineIdInput.text = cfg.machineId;
         if (autoDetectToggle != null) autoDetectToggle.isOn = cfg.dispenserAutoDetect;
         if (stockInput != null) stockInput.text = cfg.ballStock.ToString();
+        // Game config
+        if (pointsPerCorrectInput != null) pointsPerCorrectInput.text = cfg.pointsPerCorrect.ToString();
+        if (maxQuestionsInput != null) maxQuestionsInput.text = cfg.maxQuestions.ToString();
         RefreshPorts();
         // Pilih port tersimpan / aktif di dropdown
         string want = !string.IsNullOrEmpty(cfg.dispenserPort) ? cfg.dispenserPort : ActiveDispenserPort();
@@ -335,6 +344,28 @@ public class SettingsPanel : MonoBehaviour
                 return;
             }
         }
+
+        // --- Parse game config ---
+        int ppcParsed = -1;
+        if (pointsPerCorrectInput != null && !string.IsNullOrWhiteSpace(pointsPerCorrectInput.text))
+        {
+            if (!int.TryParse(pointsPerCorrectInput.text.Trim(), out ppcParsed) || ppcParsed < 1)
+            {
+                SetFooter("GAGAL: Poin per benar harus angka >= 1 (misal 20).");
+                return;
+            }
+        }
+
+        int maxQParsed = -1;
+        if (maxQuestionsInput != null && !string.IsNullOrWhiteSpace(maxQuestionsInput.text))
+        {
+            if (!int.TryParse(maxQuestionsInput.text.Trim(), out maxQParsed) || maxQParsed < 0)
+            {
+                SetFooter("GAGAL: Max soal harus angka >= 0 (0 = semua soal).");
+                return;
+            }
+        }
+
         MachineConfig cfg = new MachineConfig
         {
             serverWsUrl = serverUrlInput != null ? serverUrlInput.text.Trim() : "",
@@ -352,6 +383,14 @@ public class SettingsPanel : MonoBehaviour
         // Stok: kalau input diisi → pakai itu; kalau input kosong (tidak di-drag di UI) → pertahankan stok berjalan.
         if (stokParsed >= 0) cfg.ballStock = stokParsed;
         else if (BallDispenserManager.Instance != null) cfg.ballStock = BallDispenserManager.Instance.GetStock();
+
+        // Game config: kalau input diisi → pakai itu; kalau kosong → pertahankan nilai berjalan.
+        GameManagerGatcha gm = FindObjectOfType<GameManagerGatcha>();
+        if (ppcParsed >= 1) cfg.pointsPerCorrect = ppcParsed;
+        else if (gm != null) cfg.pointsPerCorrect = gm.pointsPerCorrect;
+
+        if (maxQParsed >= 0) cfg.maxQuestions = maxQParsed;
+        else if (gm != null) cfg.maxQuestions = gm.maxQuestions;
 
         string err;
         if (!cfg.IsValid(out err))
@@ -377,7 +416,10 @@ public class SettingsPanel : MonoBehaviour
         // 3) URL kuis → dorong ke QuizDataLoader bila ada setter-nya
         PushQuizUrl(cfg.quizApiUrl);
 
-        SetFooter($"Tersimpan • {cfg.machineId} • {cfg.serverWsUrl} • COM {cfg.dispenserPort}{(cfg.dispenserAutoDetect ? " (auto)" : "")} • Stok {cfg.ballStock}");
+        // 4) Game config → terapkan ke GameManagerGatcha langsung (berlaku sesi berikutnya)
+        if (gm != null) gm.ApplyGameConfig();
+
+        SetFooter($"Tersimpan • {cfg.machineId} • {cfg.serverWsUrl} • COM {cfg.dispenserPort}{(cfg.dispenserAutoDetect ? " (auto)" : "")} • Stok {cfg.ballStock} • Poin/benar {cfg.pointsPerCorrect} • Max soal {cfg.maxQuestions}");
         RefreshStatusLabels();
     }
 

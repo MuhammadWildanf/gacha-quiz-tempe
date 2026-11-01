@@ -8,9 +8,13 @@ public class QrScannerInput : MonoBehaviour
     public event Action<string, string> OnScanRejected;
 
     [SerializeField] private bool scanEnabled = true;
-    [Tooltip("QR vendor 171 char — scan pendek/potong langsung dibuang")]
+    [Tooltip("QR vendor 171 char — scan pendek/potong langsung dibuang (hanya berlaku jika validateFormatLocally aktif)")]
     [SerializeField] private int minChars = 171;
     [SerializeField] private float pendingTimeout = 0.5f;
+
+    [Header("Mode Validasi")]
+    [Tooltip("TRUE = Cek ketat offline 171 char di Unity. FALSE = Mode API / Fleksibel (loloskan scan dan serahkan validasi ke JS Server / API Vendor).")]
+    [SerializeField] private bool validateFormatLocally = true;
 
     [Header("Format Vendor (mirror server.js parseVendorQR)")]
     [Tooltip("Harus sama dengan VENDOR_PREFIX di server.js")]
@@ -69,15 +73,24 @@ public class QrScannerInput : MonoBehaviour
     {
         string code = _buffer.ToString().Trim();
         ClearBuffer();
-        if (string.IsNullOrEmpty(code)) return;
-        string rejectReason = ValidateFormat(code);
-        if (rejectReason != null)
+        if (string.IsNullOrEmpty(code) || code.Length < 3) return;
+
+        if (validateFormatLocally)
         {
-            Debug.LogWarning($"[2/6][SCAN] ⛔ DITOLAK-LOKAL {rejectReason} code={Short(code)} — cek minChars/prefix/middle.");
-            OnScanRejected?.Invoke(code, rejectReason);
-            return;
+            string rejectReason = ValidateFormat(code);
+            if (rejectReason != null)
+            {
+                Debug.LogWarning($"[2/6][SCAN] ⛔ DITOLAK-LOKAL {rejectReason} code={Short(code)} — cek minChars/prefix/middle.");
+                OnScanRejected?.Invoke(code, rejectReason);
+                return;
+            }
+            Debug.Log($"[2/6][SCAN] ✅ Format lokal lolos {Short(code)} → teruskan ke GachaSession.");
         }
-        Debug.Log($"[2/6][SCAN] ✅ Format lokal lolos {Short(code)} → teruskan ke GachaSession.");
+        else
+        {
+            Debug.Log($"[2/6][SCAN] 🌐 Mode Fleksibel/API: Langsung kirim scan {Short(code)} ke JS Server.");
+        }
+
         OnScanned?.Invoke(code);
     }
 

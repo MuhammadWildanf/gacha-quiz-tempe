@@ -4,6 +4,10 @@ const WebSocket = require("ws");
 const fs = require("fs");
 const path = require("path");
 
+require("dotenv").config({
+    path: path.join(__dirname, ".env")
+});
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -16,6 +20,96 @@ app.use(express.json());
 // ==========================================
 const PORT = 3005;
 const LEDGER_FILE = path.join(__dirname, "tickets_local.json");
+
+// --- MODE VALIDASI SCAN TIKET ---
+// "LOCAL_FORMAT" = Offline (cek 171 char + prefix + checksum lokal)
+// "VENDOR_API"   = Online (request validasi ke API Vendor dengan Secret/Bearer Token)
+const SCAN_MODE = process.env.SCAN_MODE || "LOCAL_FORMAT";
+
+// Konfigurasi jika SCAN_MODE = "VENDOR_API"
+const VENDOR_API_URL = process.env.VENDOR_API_URL || "http://localhost:4000/api/v1/validate-ticket";
+const VENDOR_CLAIM_URL = process.env.VENDOR_CLAIM_URL || "http://localhost:4000/api/v1/claim-ticket";
+const VENDOR_API_TOKEN = process.env.VENDOR_API_TOKEN || "mock-secret-vendor-token-12345";
+const VENDOR_AUTH_HEADER = process.env.VENDOR_AUTH_HEADER || "Authorization"; // "Authorization" atau "X-Secret-Token"
+const VENDOR_AUTH_PREFIX = process.env.VENDOR_AUTH_PREFIX || "Bearer "; // "Bearer " atau "" jika custom header
+
+// --- Helper Request ke API Vendor ---
+
+async function validateTicketWithVendor(code, deviceId) {
+    try {
+        const headers = {
+            "Content-Type": "application/json"
+        };
+
+        if (VENDOR_API_TOKEN) {
+            const prefix = VENDOR_AUTH_PREFIX.trim();
+
+            headers[VENDOR_AUTH_HEADER] = prefix
+                ? `${prefix} ${VENDOR_API_TOKEN}`.trim()
+                : VENDOR_API_TOKEN;
+        }
+
+        console.log(
+            `🌐 [VENDOR API] Mengirim validasi ke: ${VENDOR_API_URL}`
+        );
+
+        console.log(
+            `   Headers: ${VENDOR_AUTH_HEADER}: ${headers[VENDOR_AUTH_HEADER]
+                ? headers[VENDOR_AUTH_HEADER].substring(0, 15) + "..."
+                : "none"
+            }`
+        );
+
+        console.log(
+            `   Payload: { code: "${code}", deviceId: "${deviceId}" }`
+        );
+
+        const response = await fetch(VENDOR_API_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ code, deviceId }),
+            signal: AbortSignal.timeout(6000)
+        });
+
+        const data = await response.json();
+
+        return {
+            httpStatus: response.status,
+            ...data
+        };
+    } catch (err) {
+        console.error(
+            `❌ [VENDOR API ERROR] ${err.message}`
+        );
+
+        return {
+            success: false,
+            valid: false,
+            reason: "VENDOR_API_ERROR",
+            message: `Gagal terhubung ke API Vendor (${err.message})`
+        };
+    }
+}
+
+
+async function claimTicketWithVendor(code, deviceId, score, isWin) {
+    if (!VENDOR_CLAIM_URL) return;
+    try {
+        const headers = { "Content-Type": "application/json" };
+        if (VENDOR_API_TOKEN) {
+            headers[VENDOR_AUTH_HEADER] = `${VENDOR_AUTH_PREFIX}${VENDOR_API_TOKEN}`.trim();
+        }
+        await fetch(VENDOR_CLAIM_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ code, deviceId, score, isWin }),
+            signal: AbortSignal.timeout(6000)
+        });
+        console.log(`✅ [VENDOR API] Klaim game selesai terkirim ke vendor.`);
+    } catch (err) {
+        console.error(`⚠️ [VENDOR API] Gagal kirim klaim tiket ke vendor: ${err.message}`);
+    }
+}
 
 // --- Aturan menang (koin) — SAMAKAN dengan GachaSession.winMinPercentage di Unity ---
 // isWin final = (score/maxScore*100 >= WIN_MIN_PERCENTAGE). Bisa diubah tanpa ubah logika.
@@ -153,7 +247,7 @@ wss.on("connection", (ws) => {
     ws.machineId = null;
     console.log(`🎮 [WS] Mesin Unity terhubung! Total mesin aktif: ${totalMachines}`);
 
-    ws.on("message", (message) => {
+    ws.on("message", async (message) => {
         try {
             const data = JSON.parse(message);
 
@@ -161,41 +255,15 @@ wss.on("connection", (ws) => {
             // EVENT: Mesin Unity scan QR
             // ----------------------------------------
             if (data.type === "scan_qr") {
-                const scannedQr = data.qrCode;
-                const machineId = data.machineId;
+                const scannedQr = (data.qrCode || "").trim();
+                const machineId = data.machineId || "UNKNOWN_DEVICE";
                 const now = getTimestamp();
                 ws.machineId = machineId;
 
-                console.log(`\n🔍 [WS] [${now}] Mesin [${machineId}] scan: ${scannedQr}`);
+                console.log(`\n🔍 [WS] [${now}] Mesin [${machineId}] scan: ${scannedQr} (Mode: ${SCAN_MODE})`);
 
-                // --- LANGKAH 1: Validasi struktur QR (tanpa data vendor) ---
-                const parsed = parseQRCode(scannedQr);
-                if (!parsed.valid) {
-                    console.log(`❌ [WS] QR ditolak: ${parsed.reason}`);
-                    ws.send(JSON.stringify({
-                        type: "scan_result",
-                        success: false,
-                        reason: parsed.reason,
-                        message: reasonMessage(parsed.reason)
-                    }));
-                    return;
-                }
-
-                // --- LANGKAH 2: Cek status tiket di ledger (pending/used/bebas) ---
                 const ledger = loadLedger();
                 const existing = ledger.find(e => e.qrCode === scannedQr);
-
-                // Sudah selesai dipakai → tolak permanen
-                if (existing && existing.state === "used") {
-                    console.log(`❌ [WS] QR ${scannedQr} sudah SELESAI dipakai gacha.`);
-                    ws.send(JSON.stringify({
-                        type: "scan_result",
-                        success: false,
-                        reason: "ALREADY_USED",
-                        message: "Tiket ini sudah pernah digunakan."
-                    }));
-                    return;
-                }
 
                 // Sedang diproses mesin LAIN → tolak sementara
                 if (existing && existing.state === "pending" && existing.usedByMachine !== machineId) {
@@ -209,7 +277,69 @@ wss.on("connection", (ws) => {
                     return;
                 }
 
-                // --- LANGKAH 3: Claim / re-claim (state = "pending" sampai game selesai) ---
+                // Sudah selesai dipakai di sistem kita → tolak permanen
+                if (existing && existing.state === "used") {
+                    console.log(`❌ [WS] QR ${scannedQr} sudah SELESAI dipakai gacha di sistem lokal.`);
+                    ws.send(JSON.stringify({
+                        type: "scan_result",
+                        success: false,
+                        reason: "ALREADY_USED",
+                        message: "Tiket ini sudah pernah digunakan."
+                    }));
+                    return;
+                }
+
+                let ticketId = scannedQr;
+                let guestName = null;
+                let ticketType = null;
+                let successMessage = "Tiket valid, selamat gacha!";
+
+                // ========================================
+                // 1. JIKA SCAN_MODE = "VENDOR_API"
+                // ========================================
+                if (SCAN_MODE === "VENDOR_API") {
+                    console.log(`🌐 [WS] Meminta validasi online ke API Vendor...`);
+                    const vendorRes = await validateTicketWithVendor(scannedQr, machineId);
+
+                    if (!vendorRes.success || !vendorRes.valid) {
+                        const reason = vendorRes.reason || "INVALID_TICKET";
+                        const msg = vendorRes.message || "Tiket ditolak oleh sistem vendor.";
+                        console.log(`❌ [WS] Ditolak oleh API Vendor: ${reason} - ${msg}`);
+                        ws.send(JSON.stringify({
+                            type: "scan_result",
+                            success: false,
+                            reason: reason,
+                            message: msg
+                        }));
+                        return;
+                    }
+
+                    // Tiket dikonfirmasi valid oleh vendor
+                    ticketId = String(vendorRes.data?.ticketId || scannedQr);
+                    guestName = vendorRes.data?.guestName || null;
+                    ticketType = vendorRes.data?.ticketType || null;
+                    if (vendorRes.message) successMessage = vendorRes.message;
+                    console.log(`✅ [WS] Vendor konfirmasi VALID: TicketId=${ticketId}, Guest=${guestName || "-"}`);
+                }
+                // ========================================
+                // 2. JIKA SCAN_MODE = "LOCAL_FORMAT" (Offline)
+                // ========================================
+                else {
+                    const parsed = parseQRCode(scannedQr);
+                    if (!parsed.valid) {
+                        console.log(`❌ [WS] QR ditolak format lokal: ${parsed.reason}`);
+                        ws.send(JSON.stringify({
+                            type: "scan_result",
+                            success: false,
+                            reason: parsed.reason,
+                            message: reasonMessage(parsed.reason)
+                        }));
+                        return;
+                    }
+                    ticketId = parsed.ticketId;
+                }
+
+                // --- LANGKAH: Simpan riwayat scan ke ledger sistem kita ---
                 if (existing && existing.state === "pending" && existing.usedByMachine === machineId) {
                     existing.usedAt = now; // mesin yang sama mengulang sesi tiket yang belum selesai
                     saveLedger(ledger);
@@ -217,13 +347,16 @@ wss.on("connection", (ws) => {
                 } else {
                     ledger.push({
                         qrCode: scannedQr,
-                        ticketId: parsed.ticketId,
+                        ticketId: ticketId,
+                        guestName: guestName,
+                        ticketType: ticketType,
+                        scanMode: SCAN_MODE,
                         state: "pending",
                         usedAt: now,
                         usedByMachine: machineId
                     });
                     saveLedger(ledger);
-                    console.log(`✅ [WS] QR ${scannedQr} (tiket ${parsed.ticketId}) di-claim ${machineId} — menunggu game selesai.`);
+                    console.log(`💾 [LEDGER SISTEM] Scan tersimpan di sistem lokal! Tiket: ${ticketId}, Mode: ${SCAN_MODE}`);
                 }
 
                 // Kirim sukses ke mesin yang scan
@@ -231,8 +364,9 @@ wss.on("connection", (ws) => {
                     type: "scan_result",
                     success: true,
                     reason: "VALID",
-                    message: "Tiket valid, selamat gacha!",
-                    ticketId: parsed.ticketId,
+                    message: successMessage,
+                    ticketId: ticketId,
+                    guestName: guestName,
                     usedAt: now
                 }));
 
@@ -240,7 +374,7 @@ wss.on("connection", (ws) => {
                 broadcast({
                     type: "ticket_claimed",
                     qrCode: scannedQr,
-                    ticketId: parsed.ticketId,
+                    ticketId: ticketId,
                     machineId: machineId,
                     usedAt: now
                 });
@@ -273,13 +407,10 @@ wss.on("connection", (ws) => {
                 }
 
                 // --- Hasil quiz dari Unity (GameManagerGatcha totalScore = koin) ---
-                // Unity kirim {score, maxScore, isWin, prizeTier}, tapi server verifikasi ulang
-                // agar tidak bisa dicurangi dari client. Data lama tanpa skor tetap didukung.
                 const score = Number.isFinite(Number(data.score)) ? Number(data.score) : 0;
                 const maxScore = Number.isFinite(Number(data.maxScore)) ? Number(data.maxScore) : 0;
                 const pct = maxScore > 0 ? (score / maxScore * 100) : 0;
                 const serverWin = pct >= WIN_MIN_PERCENTAGE;
-                // Menang hanya jika Unity klaim menang DAN lolos threshold server
                 const clientWin = data.isWin === true || data.isWin === 1 || data.isWin === "true";
                 const finalWin = (maxScore > 0) ? (serverWin && clientWin) : clientWin;
                 const prizeTier = finalWin ? (String(data.prizeTier || "").trim() || WIN_PRIZE_DEFAULT) : "";
@@ -290,11 +421,16 @@ wss.on("connection", (ws) => {
                 entry.maxScore = maxScore;
                 entry.isWin = finalWin;
                 entry.prizeTier = prizeTier;
-                // Status untuk platform dispenser (polling via GET /api/results)
                 entry.dispenseStatus = finalWin ? "pending_dispense" : "skipped";
                 saveLedger(ledger);
 
-                console.log(`🎉 [WS] [${now}] Game ${scannedQr} (tiket ${entry.ticketId}) SELESAI di ${machineId} skor ${score}/${maxScore} (${pct.toFixed(0)}%) → ${finalWin ? "MENANG 🏆" : "kalah"} → tiket dikunci used.`);
+                console.log(`🎉 [WS] [${now}] Game ${scannedQr} (tiket ${entry.ticketId}) SELESAI di ${machineId} skor ${score}/${maxScore} (${pct.toFixed(0)}%) → ${finalWin ? "MENANG 🏆" : "kalah"} → status lokal: used.`);
+
+                // Jika mode VENDOR_API, kabari vendor bahwa game selesai untuk potong kuota
+                if (SCAN_MODE === "VENDOR_API") {
+                    claimTicketWithVendor(scannedQr, machineId, score, finalWin);
+                }
+
                 broadcast({
                     type: "ticket_finished",
                     qrCode: scannedQr,
@@ -302,6 +438,10 @@ wss.on("connection", (ws) => {
                     machineId: machineId,
                     finishedAt: now,
                     score,
+                    maxScore,
+                    isWin: finalWin,
+                    prizeTier,
+                    dispenseStatus: entry.dispenseStatus,
                     maxScore,
                     isWin: finalWin,
                     prizeTier,
@@ -505,10 +645,15 @@ app.get("/", (req, res) => {
         const winTxt = e.state !== "used" ? "-" : (e.isWin ? `🏆 MENANG${e.prizeTier ? ` (${e.prizeTier})` : ""}` : "kalah");
         const disp = e.dispenseStatus || (e.isWin ? "pending_dispense" : "-");
         const dispCls = disp === "dispensed" ? "b-used" : (disp === "pending_dispense" ? "b-pending" : "b-skip");
+        const guest = e.guestName ? `<b>${e.guestName}</b>${e.ticketType ? ` <small>(${e.ticketType})</small>` : ""}` : "-";
+        const modeBadge = e.scanMode === "VENDOR_API" ? `<span style="background:#17a2b8; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">API</span>` : `<span style="background:#6c757d; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">OFFLINE</span>`;
+
         return `
         <tr>
             <td><code>${e.qrCode}</code></td>
             <td>${e.ticketId}</td>
+            <td>${guest}</td>
+            <td>${modeBadge}</td>
             <td><span class="badge ${e.state === "used" ? "b-used" : "b-pending"}">${e.state === "used" ? "Selesai" : "Diproses"}</span></td>
             <td>${scoreTxt}</td>
             <td>${winTxt}</td>
@@ -539,10 +684,11 @@ app.get("/", (req, res) => {
             .b-used { background: #d4edda; color: #155724; }
             .b-pending { background: #fff3cd; color: #856404; }
             .b-skip { background: #e2e3e5; color: #555; }
+            .mode-pill { background: ${SCAN_MODE === "VENDOR_API" ? "#17a2b8" : "#28a745"}; color: #fff; padding: 4px 12px; border-radius: 15px; font-size: 14px; font-weight: bold; }
         </style>
     </head>
     <body>
-        <h2>💻 Local Server — Ledger Gacha (Validasi Struktur QR)</h2>
+        <h2>💻 Local Server — Riwayat Scan Gacha <span class="mode-pill">Mode: ${SCAN_MODE}</span></h2>
         
         <div class="stats">
             <div class="card">
@@ -573,12 +719,12 @@ app.get("/", (req, res) => {
 
         <table>
             <tr>
-                <th>QR Code</th><th>Ticket ID</th><th>Status</th><th>Koin</th><th>Hasil</th><th>Dispense</th><th>Waktu Scan</th><th>Mesin</th>
+                <th>QR Code</th><th>Ticket ID</th><th>Pengunjung</th><th>Mode</th><th>Status</th><th>Koin</th><th>Hasil</th><th>Dispense</th><th>Waktu Scan</th><th>Mesin</th>
             </tr>
-            ${rows || '<tr><td colspan="8" class="empty">Belum ada QR yang digunakan gacha</td></tr>'}
+            ${rows || '<tr><td colspan="10" class="empty">Belum ada QR yang discan di sistem ini</td></tr>'}
         </table>
 
-        <p class="note">🔄 Halaman auto-refresh tiap 10 detik. Rilis manual: /api/release/:qrCode | Platform: GET /api/results (menang) → POST /api/dispense-ack | Threshold menang: ${WIN_MIN_PERCENTAGE}% | Format vendor ${VENDOR_LENGTH} char.</p>
+        <p class="note">🔄 Auto-refresh tiap 10 detik. Mode saat ini: <b>${SCAN_MODE}</b> | Target Vendor: ${SCAN_MODE === "VENDOR_API" ? VENDOR_API_URL : "Pola Offline (171 char)"}</p>
     </body>
     </html>
     `);
@@ -681,7 +827,8 @@ app.post("/debug", (req, res) => {
 
 server.listen(PORT, () => {
     console.log(`========================================`);
-    console.log(`💻 [LOCAL SERVER] Aktif (tanpa sync vendor)`);
+    console.log("SCAN_MODE =", SCAN_MODE);
+    console.log("VENDOR_API_URL =", VENDOR_API_URL);
     console.log(`WebSocket    : ws://localhost:${PORT}`);
     console.log(`Dashboard    : http://localhost:${PORT}`);
     console.log(`Debug Format : http://localhost:${PORT}/debug`);

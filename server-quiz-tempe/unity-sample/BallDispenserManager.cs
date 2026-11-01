@@ -253,12 +253,6 @@ public class BallDispenserManager : MonoBehaviour
         try { StockChanged?.Invoke(v); } catch { }
     }
 
-    [ContextMenu("Isi Stok 50")]
-    private void CtxRefill50() { SetStock(50, "(context menu)"); }
-
-    [ContextMenu("Cek Stok")]
-    private void CtxCheckStock() { Debug.Log($"[Dispenser] [STOK] Sisa={GetStock()}"); }
-
     /// <summary>
     /// Jalur game menang: cek stok → kirim PUSH → kurangi 1.
     /// Return false jika stok habis / hardware putus (tidak ada PUSH, stok utuh).
