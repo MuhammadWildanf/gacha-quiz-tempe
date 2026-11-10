@@ -1,0 +1,38 @@
+{
+  "gacha-001": {
+    "device_sn": "gacha-001",
+    "device_status": "ACTIVE",
+    "device_type": "GACHA",
+    "device_code": "GACHA-001",
+    "device_name": "Gacha Mesin Utama",
+    "config_version": "1.0",
+    "location_name": "Tempe Park Lobby",
+    "merchant": {
+      "name": "Tempe Park"
+    }
+  },
+  "gacha-002": {
+    "device_sn": "gacha-002",
+    "device_status": "PENDING",
+    "device_type": "GACHA",
+    "device_code": "GACHA-GACHA-002",
+    "device_name": "Gacha gacha-002",
+    "config_version": "1.0",
+    "location_name": "Tempe Park Area",
+    "merchant": {
+      "name": "Tempe Park"
+    }
+  },
+  "gacha-003": {
+    "device_sn": "gacha-003",
+    "device_status": "PENDING",
+    "device_type": "GACHA",
+    "device_code": "GACHA-GACHA-003",
+    "device_name": "Gacha gacha-003",
+    "config_version": "1.0",
+    "location_name": "Tempe Park Area",
+    "merchant": {
+      "name": "Tempe Park"
+    }
+  }
+}

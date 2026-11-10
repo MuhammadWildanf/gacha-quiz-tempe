@@ -21,74 +21,30 @@ app.use(express.json());
 const PORT = 3005;
 const LEDGER_FILE = path.join(__dirname, "tickets_local.json");
 
+const VendorClient = require("./vendor-client");
+
 // --- MODE VALIDASI SCAN TIKET ---
-// "LOCAL_FORMAT" = Offline (cek 171 char + prefix + checksum lokal)
-// "VENDOR_API"   = Online (request validasi ke API Vendor dengan Secret/Bearer Token)
-const SCAN_MODE = process.env.SCAN_MODE || "LOCAL_FORMAT";
+// "LOCAL_FORMAT" = Offline (cek format lokal)
+// "VENDOR_API"   = Online (Spesifikasi Vendor v1.0 via HMAC-SHA256)
+const SCAN_MODE = process.env.SCAN_MODE || "VENDOR_API";
 
-// Konfigurasi jika SCAN_MODE = "VENDOR_API"
-const VENDOR_API_URL = process.env.VENDOR_API_URL || "http://localhost:4000/api/v1/validate-ticket";
-const VENDOR_CLAIM_URL = process.env.VENDOR_CLAIM_URL || "http://localhost:4000/api/v1/claim-ticket";
-const VENDOR_API_TOKEN = process.env.VENDOR_API_TOKEN || "mock-secret-vendor-token-12345";
-const VENDOR_AUTH_HEADER = process.env.VENDOR_AUTH_HEADER || "Authorization"; // "Authorization" atau "X-Secret-Token"
-const VENDOR_AUTH_PREFIX = process.env.VENDOR_AUTH_PREFIX || "Bearer "; // "Bearer " atau "" jika custom header
+// Konfigurasi Vendor API v1.0
+const VENDOR_BASE_URL = process.env.VENDOR_BASE_URL || "http://localhost:4000";
+const VENDOR_API_KEY = process.env.VENDOR_API_KEY || "mk_tempe_gacha_test";
+const VENDOR_SECRET = process.env.VENDOR_SECRET || "mock-vendor-secret-key-12345";
+const DEVICE_SNS = process.env.DEVICE_SNS || process.env.DEVICE_SN || "gacha-001";
 
-// --- Helper Request ke API Vendor ---
+// Inisialisasi Vendor Client Multi-Device
+const vendorClient = new VendorClient({
+    baseUrl: VENDOR_BASE_URL,
+    apiKey: VENDOR_API_KEY,
+    secret: VENDOR_SECRET,
+    deviceSns: DEVICE_SNS
+});
 
+// Helper Request ke API Vendor (Wrapper v1.0)
 async function validateTicketWithVendor(code, deviceId) {
-    try {
-        const headers = {
-            "Content-Type": "application/json"
-        };
-
-        if (VENDOR_API_TOKEN) {
-            const prefix = VENDOR_AUTH_PREFIX.trim();
-
-            headers[VENDOR_AUTH_HEADER] = prefix
-                ? `${prefix} ${VENDOR_API_TOKEN}`.trim()
-                : VENDOR_API_TOKEN;
-        }
-
-        console.log(
-            `🌐 [VENDOR API] Mengirim validasi ke: ${VENDOR_API_URL}`
-        );
-
-        console.log(
-            `   Headers: ${VENDOR_AUTH_HEADER}: ${headers[VENDOR_AUTH_HEADER]
-                ? headers[VENDOR_AUTH_HEADER].substring(0, 15) + "..."
-                : "none"
-            }`
-        );
-
-        console.log(
-            `   Payload: { code: "${code}", deviceId: "${deviceId}" }`
-        );
-
-        const response = await fetch(VENDOR_API_URL, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ code, deviceId }),
-            signal: AbortSignal.timeout(6000)
-        });
-
-        const data = await response.json();
-
-        return {
-            httpStatus: response.status,
-            ...data
-        };
-    } catch (err) {
-        console.error(
-            `❌ [VENDOR API ERROR] ${err.message}`
-        );
-
-        return {
-            success: false,
-            valid: false,
-            reason: "VENDOR_API_ERROR",
-            message: `Gagal terhubung ke API Vendor (${err.message})`
-        };
-    }
+    return await vendorClient.validateTicket(code, deviceId);
 }
 
 
@@ -116,99 +72,6 @@ async function claimTicketWithVendor(code, deviceId, score, isWin) {
 const WIN_MIN_PERCENTAGE = 80;
 // Hadiah default jika Unity kirim isWin=true tanpa prizeTier
 const WIN_PRIZE_DEFAULT = "HADIAH";
-
-// Kode event vendor pada payload QR (harus sama dgn yg dicetak vendor)
-
-// --- Format QR vendor (opaque 171 char, base64url -> 128 bytes) ---
-// Sample vendor: Y5X01g9AWhfSmj5BTjbhA... (171 char)
-// Zona fixed: prefix 21 char [0-20] + middle 83 char di pos 65.
-// Zona variabel: batch 43 char [21-63] + serial unik 22 char [149-170].
-const VENDOR_LENGTH = 171;
-const VENDOR_PREFIX = "Y5X01g9AWhfSmj5BTjbhA";
-const VENDOR_MIDDLE = "30sfVreDY0RP7ccjOL5L81Xv_Kw5Cv8Ns1Y-J-K1C9GBKsvVTcPHvI--8gzAfTh4Qx2MYCzQSx2HOuW8RX8";
-const VENDOR_MIDDLE_POS = 65;
-const VENDOR_CHARSET = /^[A-Za-z0-9\-_]+$/;
-
-// ==========================================
-// 1. HELPER VALIDASI QR VENDOR
-// ==========================================
-// Parse & validasi QR vendor (opaque 171 char).
-// Return { valid, reason, ... } atau { valid:false, reason }
-function parseVendorQR(raw) {
-    if (raw.length !== VENDOR_LENGTH) return { valid: false, reason: "INVALID_FORMAT" };
-    if (!VENDOR_CHARSET.test(raw)) return { valid: false, reason: "INVALID_FORMAT" };
-    if (!raw.startsWith(VENDOR_PREFIX)) return { valid: false, reason: "INVALID_EVENT" };
-    if (raw.indexOf(VENDOR_MIDDLE) !== VENDOR_MIDDLE_POS) return { valid: false, reason: "INVALID_EVENT" };
-    return {
-        valid: true,
-        format: "VENDOR",
-        eventCode: VENDOR_PREFIX,
-        batch: raw.slice(21, 64),
-        serial: raw.slice(149),
-        ticketId: raw.slice(149),
-        qrCode: raw
-    };
-}
-
-// Parse & validasi QR. Return { valid, reason, ... } atau { valid:false, reason }
-function parseQRCode(qr) {
-    const raw = String(qr || "").trim();
-    return parseVendorQR(raw);
-}
-
-// Analisis detail QR untuk debugging / adaptasi format baru
-// Tidak menyimpan ke ledger — hanya menampilkan setiap tahap validasi.
-function analyzeVendorQR(raw) {
-    const res = {
-        input: raw,
-        length: raw.length,
-        steps: [],
-        finalStatus: "INVALID_FORMAT",
-        note: "",
-        field: null
-    };
-    const lenOk = raw.length === VENDOR_LENGTH;
-    res.steps.push({
-        name: `Panjang (${VENDOR_LENGTH} char)`,
-        ok: lenOk,
-        detail: lenOk ? `${raw.length} char sesuai` : `${raw.length} char ≠ ${VENDOR_LENGTH} — cek hasil scan`
-    });
-    if (!lenOk) { res.finalStatus = "INVALID_FORMAT"; return res; }
-
-    const charsetOk = VENDOR_CHARSET.test(raw);
-    res.steps.push({
-        name: "Charset (base64url)",
-        ok: charsetOk,
-        detail: charsetOk ? "Hanya A-Z a-z 0-9 - _" : "Ada karakter di luar base64url"
-    });
-    if (!charsetOk) { res.finalStatus = "INVALID_FORMAT"; return res; }
-
-    const prefixOk = raw.startsWith(VENDOR_PREFIX);
-    res.steps.push({
-        name: "Prefix vendor",
-        ok: prefixOk,
-        detail: prefixOk ? `${VENDOR_PREFIX} sesuai` : `Prefix ≠ "${VENDOR_PREFIX}" — ubah VENDOR_PREFIX jika vendor ganti event`
-    });
-    if (!prefixOk) { res.finalStatus = "INVALID_EVENT"; return res; }
-
-    const middleOk = raw.indexOf(VENDOR_MIDDLE) === VENDOR_MIDDLE_POS;
-    res.steps.push({
-        name: `Blok tengah (pos ${VENDOR_MIDDLE_POS})`,
-        ok: middleOk,
-        detail: middleOk ? "Blok tengah sesuai" : `Blok tengah tidak di pos ${VENDOR_MIDDLE_POS} — ubah VENDOR_MIDDLE jika vendor ganti event`
-    });
-    if (!middleOk) { res.finalStatus = "INVALID_EVENT"; return res; }
-
-    res.finalStatus = "VALID";
-    res.note = "QR vendor lolos. Siap dipakai gacha.";
-    res.field = { eventCode: VENDOR_PREFIX, batch: raw.slice(21, 64), serial: raw.slice(149), seqNumber: raw.slice(149) };
-    return res;
-}
-
-function analyzeQR(qr) {
-    const raw = String(qr || "").trim();
-    return analyzeVendorQR(raw);
-}
 
 // ==========================================
 // 2. HELPER LEDGER LOKAL (transaksi gacha)
@@ -295,49 +158,30 @@ wss.on("connection", (ws) => {
                 let successMessage = "Tiket valid, selamat gacha!";
 
                 // ========================================
-                // 1. JIKA SCAN_MODE = "VENDOR_API"
+                // VALIDASI SCAN VIA API VENDOR v1.0
                 // ========================================
-                if (SCAN_MODE === "VENDOR_API") {
-                    console.log(`🌐 [WS] Meminta validasi online ke API Vendor...`);
-                    const vendorRes = await validateTicketWithVendor(scannedQr, machineId);
+                console.log(`🌐 [WS] Meminta validasi online ke API Vendor...`);
+                const vendorRes = await validateTicketWithVendor(scannedQr, machineId);
 
-                    if (!vendorRes.success || !vendorRes.valid) {
-                        const reason = vendorRes.reason || "INVALID_TICKET";
-                        const msg = vendorRes.message || "Tiket ditolak oleh sistem vendor.";
-                        console.log(`❌ [WS] Ditolak oleh API Vendor: ${reason} - ${msg}`);
-                        ws.send(JSON.stringify({
-                            type: "scan_result",
-                            success: false,
-                            reason: reason,
-                            message: msg
-                        }));
-                        return;
-                    }
+                if (!vendorRes.success || !vendorRes.valid) {
+                    const reason = vendorRes.reason || "INVALID_TICKET";
+                    const msg = vendorRes.message || "Tiket ditolak oleh sistem vendor.";
+                    console.log(`❌ [WS] Ditolak oleh API Vendor: ${reason} - ${msg}`);
+                    ws.send(JSON.stringify({
+                        type: "scan_result",
+                        success: false,
+                        reason: reason,
+                        message: msg
+                    }));
+                    return;
+                }
 
-                    // Tiket dikonfirmasi valid oleh vendor
-                    ticketId = String(vendorRes.data?.ticketId || scannedQr);
-                    guestName = vendorRes.data?.guestName || null;
-                    ticketType = vendorRes.data?.ticketType || null;
-                    if (vendorRes.message) successMessage = vendorRes.message;
-                    console.log(`✅ [WS] Vendor konfirmasi VALID: TicketId=${ticketId}, Guest=${guestName || "-"}`);
-                }
-                // ========================================
-                // 2. JIKA SCAN_MODE = "LOCAL_FORMAT" (Offline)
-                // ========================================
-                else {
-                    const parsed = parseQRCode(scannedQr);
-                    if (!parsed.valid) {
-                        console.log(`❌ [WS] QR ditolak format lokal: ${parsed.reason}`);
-                        ws.send(JSON.stringify({
-                            type: "scan_result",
-                            success: false,
-                            reason: parsed.reason,
-                            message: reasonMessage(parsed.reason)
-                        }));
-                        return;
-                    }
-                    ticketId = parsed.ticketId;
-                }
+                // Tiket dikonfirmasi valid oleh vendor
+                ticketId = String(vendorRes.data?.ticketId || scannedQr);
+                guestName = vendorRes.data?.guestName || null;
+                ticketType = vendorRes.data?.ticketType || null;
+                if (vendorRes.message) successMessage = vendorRes.message;
+                console.log(`✅ [WS] Vendor konfirmasi VALID: TicketId=${ticketId}, Guest=${guestName || "-"}`);
 
                 // --- LANGKAH: Simpan riwayat scan ke ledger sistem kita ---
                 if (existing && existing.state === "pending" && existing.usedByMachine === machineId) {
@@ -482,16 +326,6 @@ wss.on("connection", (ws) => {
     });
 });
 
-function reasonMessage(reason) {
-    const map = {
-        INVALID_FORMAT: "QR tidak dikenali. Scan kode dari tiket resmi.",
-        INVALID_EVENT: "QR ini bukan untuk event ini.",
-        ALREADY_USED: "Tiket ini sudah pernah digunakan.",
-        PENDING: "Tiket ini sedang diproses di mesin lain."
-    };
-    return map[reason] || "QR ditolak.";
-}
-
 // ==========================================
 // 4. API TAMBAHAN (Cek status via Browser)
 // ==========================================
@@ -500,25 +334,18 @@ app.get("/api/ledger", (req, res) => {
     res.json(loadLedger());
 });
 
-// Cek status sebuah QR (dipakai/tidak, struktur valid/tidak)
+// Cek status sebuah QR di ledger
 app.get("/api/ledger/:qrCode", (req, res) => {
     const qrCode = req.params.qrCode;
-    const parsed = parseQRCode(qrCode);
-
-    let status;
-    if (!parsed.valid) {
-        status = "INVALID";
-    } else {
-        const ledger = loadLedger();
-        const entry = ledger.find(e => e.qrCode === qrCode);
-        status = entry ? (entry.state === "used" ? "USED" : "PENDING") : "AVAILABLE";
-    }
+    const ledger = loadLedger();
+    const entry = ledger.find(e => e.qrCode === qrCode);
+    const status = entry ? (entry.state === "used" ? "USED" : "PENDING") : "NOT_IN_LEDGER";
 
     res.json({
         success: true,
         qrCode,
-        parsed,
-        status
+        status,
+        entry: entry || null
     });
 });
 
@@ -540,13 +367,12 @@ app.get("/api/release/:qrCode", (req, res) => {
 // 4b. API UNTUK PLATFORM DISPENSER (PULL MODEL)
 // Pihak platform polling ke sini untuk tahu siapa yang menang.
 // ==========================================
-// Aturan main & threshold (biar platform/Unity bisa sinkron tanpa tanya manual)
+// Aturan main & threshold
 app.get("/api/config", (req, res) => {
     res.json({
         success: true,
         winMinPercentage: WIN_MIN_PERCENTAGE,
-        winPrizeDefault: WIN_PRIZE_DEFAULT,
-        vendorLength: VENDOR_LENGTH
+        winPrizeDefault: WIN_PRIZE_DEFAULT
     });
 });
 
@@ -724,118 +550,25 @@ app.get("/", (req, res) => {
             ${rows || '<tr><td colspan="10" class="empty">Belum ada QR yang discan di sistem ini</td></tr>'}
         </table>
 
-        <p class="note">🔄 Auto-refresh tiap 10 detik. Mode saat ini: <b>${SCAN_MODE}</b> | Target Vendor: ${SCAN_MODE === "VENDOR_API" ? VENDOR_API_URL : "Pola Offline (171 char)"}</p>
+        <p class="note">🔄 Auto-refresh tiap 10 detik. Target Vendor API: <b>${VENDOR_BASE_URL}</b></p>
     </body>
     </html>
     `);
 });
 
-// ==========================================
-// 5. DEBUG FORMAT QR (cek format baru tanpa simpan ke ledger)
-// ==========================================
-function renderDebug(qr, page = "http") {
-    let resultHtml = "";
-    if (qr) {
-        const a = analyzeQR(qr);
-        const boxColor = a.finalStatus === "VALID" ? "#1e7e34" : "#a03232";
-        const steps = a.steps.map(s => `
-            <tr>
-                <td>${s.name}</td>
-                <td><span class="badge ${s.ok ? "ok" : "no"}">${s.ok ? "PASS" : "GAGAL"}</span></td>
-                <td>${s.detail}</td>
-            </tr>
-        `).join("");
-
-        const fieldHtml = a.field ? `
-            <div class="field-box">
-                Kode Event: <b>${a.field.eventCode}</b> |
-                ${a.field.dateLabel ? `Tanggal Terbit: <b>${a.field.dateLabel}</b> | ` : ""}
-                Nomor Urut Tiket: <b>${a.field.seqNumber}</b>
-                ${a.field.batch ? `<br>Batch: <code>${a.field.batch}</code> | Serial: <code>${a.field.serial}</code>` : ""}
-            </div>` : "";
-
-        resultHtml = `
-            <div class="result" style="border-color:${boxColor}">
-                <div style="font-size:26px; font-weight:bold; color:${boxColor}">${a.finalStatus}</div>
-                <div style="font-size:12px; color:#666; margin-top:4px">Panjang string: ${a.length} karakter</div>
-                ${fieldHtml}
-                <table>
-                    <tr><th style="width:250px">Tahap Validasi</th><th style="width:80px">Status</th><th>Detail</th></tr>
-                    ${steps}
-                </table>
-                <div class="note-debug">${a.note || "Simpan pengaturan QR jika format berubah."}</div>
-            </div>`;
-    }
-
-    const paper = `
-        <html>
-        <head>
-            <meta charset="utf-8"><title>Debug Format QR — Vendor</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 25px; background:#f5f6f8; }
-                h2 { color:#333; }
-                .card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.12); max-width:780px; margin:auto; }
-                input[type=text] { width:100%; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; }
-                button { background:#007bff; color:#fff; border:0; padding:10px 22px; border-radius:6px; font-size:15px; margin-top:12px; cursor:pointer; }
-                table { border-collapse:collapse; width:100%; margin-top:15px; }
-                th, td { border:1px solid #ddd; padding:8px 10px; font-size:13px; text-align:left; }
-                th { background:#343a40; color:#fff; }
-                .badge { padding:2px 10px; border-radius:10px; font-size:11px; font-weight:bold; }
-                .badge.ok { background:#d4edda; color:#155724; }
-                .badge.no { background:#f8d7da; color:#721c24; }
-                .result { border:3px solid #ccc; border-radius:10px; padding:15px; margin-top:20px; background:#fff; }
-                .field-box { background:#fff3cd; border-radius:6px; padding:8px 12px; margin-top:10px; font-size:14px; }
-                .note-debug { margin-top:12px; font-size:12px; color:#777; }
-                .samples { margin-top:14px; font-size:12px; color:#555; }
-                .samples a { margin-right:10px; }
-                .back { display:inline-block; margin-top:15px; font-size:13px; color:#666; text-decoration:none; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h2>🔍 Debug Format QR</h2>
-                <p style="font-size:14px; color:#666">
-                    Tempel/paste hasil scan QR di sini (atau ketik langsung) untuk melihat tahap-tahap validasi —
-                    <b>tanpa menyimpan ke ledger.</b>
-                    Jika format QR dari vendor berubah, gunakan halaman ini untuk mengecek & menyesuaikan.
-                </p>
-                <form method="POST" action="/debug">
-                    <input type="text" name="qr" value="${qr || ""}" placeholder="Tempel QR vendor 171 karakter" autofocus>
-                    <button type="submit">Analisis</button>
-                </form>
-
-                <div class="samples">
-                    Coba: <a href="/debug?qr=Y5X01g9AWhfSmj5BTjbhAErFJEk7scb7-VqSazrL0z_5W6ABqslrARtYkC-9nYWD_30sfVreDY0RP7ccjOL5L81Xv_Kw5Cv8Ns1Y-J-K1C9GBKsvVTcPHvI--8gzAfTh4Qx2MYCzQSx2HOuW8RX8-2ouKPG83CIzdBYMGiP4cnU">QR vendor valid</a>
-                    <a href="/debug?qr=X5X01g9AWhfSmj5BTjbhAErFJEk7scb7-VqSazrL0z_5W6ABqslrARtYkC-9nYWD_30sfVreDY0RP7ccjOL5L81Xv_Kw5Cv8Ns1Y-J-K1C9GBKsvVTcPHvI--8gzAfTh4Qx2MYCzQSx2HOuW8RX8-2ouKPG83CIzdBYMGiP4cnU">prefix salah</a>
-                </div>
-                ${qr ? resultHtml : ""}
-                <a class="back" href="/">← Kembali ke Dashboard</a>
-            </div>
-        </body>
-        </html>
-    `;
-    return paper;
-}
-
-app.get("/debug", (req, res) => {
-    res.send(renderDebug((req.query.qr || "").toString()));
-});
-
-app.post("/debug", (req, res) => {
-    res.send(renderDebug((req.body.qr || "").toString(), null, "post"));
-});
-
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
     console.log(`========================================`);
-    console.log("SCAN_MODE =", SCAN_MODE);
-    console.log("VENDOR_API_URL =", VENDOR_API_URL);
-    console.log(`WebSocket    : ws://localhost:${PORT}`);
-    console.log(`Dashboard    : http://localhost:${PORT}`);
-    console.log(`Debug Format : http://localhost:${PORT}/debug`);
-    console.log(`API Ledger   : http://localhost:${PORT}/api/ledger`);
-    console.log(`API Results  : http://localhost:${PORT}/api/results (untuk platform dispenser)`);
-    console.log(`API Config   : http://localhost:${PORT}/api/config (threshold menang ${WIN_MIN_PERCENTAGE}%)`);
-    console.log(`Format QR    : Vendor ${VENDOR_LENGTH} char`);
-    console.log(`Vendor prefix: ${VENDOR_PREFIX} | middle@${VENDOR_MIDDLE_POS} len=${VENDOR_MIDDLE.length}`);
+    console.log("VENDOR_BASE_URL =", VENDOR_BASE_URL);
+    console.log("DEVICE_SNS      =", vendorClient.deviceList.join(", "));
+    console.log(`WebSocket       : ws://localhost:${PORT}`);
+    console.log(`Dashboard       : http://localhost:${PORT}`);
+    console.log(`API Ledger      : http://localhost:${PORT}/api/ledger`);
+    console.log(`API Results     : http://localhost:${PORT}/api/results (untuk platform dispenser)`);
+    console.log(`API Config      : http://localhost:${PORT}/api/config (threshold menang ${WIN_MIN_PERCENTAGE}%)`);
     console.log(`========================================\n`);
+
+    // Inisialisasi Device ke Vendor API
+    console.log(`🚀 [INIT] Melakukan registrasi & inisialisasi (${vendorClient.deviceList.length} device) ke Vendor API...`);
+    await vendorClient.requestAllDevices();
+    vendorClient.startConfigPolling(30);
 });

@@ -5,8 +5,8 @@
     "company": "PT. Maju Bersama",
     "qrCode": "TIK-VIP-001",
     "ticketType": "VIP",
-    "maxPlay": 3,
-    "status": "AVAILABLE"
+    "maxPlay": 0,
+    "status": "USED"
   },
   {
     "id": 102,
@@ -14,8 +14,8 @@
     "company": "CV. Sukses Jaya",
     "qrCode": "TIK-REG-002",
     "ticketType": "REGULER",
-    "maxPlay": 1,
-    "status": "AVAILABLE"
+    "maxPlay": 0,
+    "status": "USED"
   },
   {
     "id": 103,
@@ -23,8 +23,8 @@
     "company": "PT. Berkah Abadi",
     "qrCode": "TIK-REG-003",
     "ticketType": "REGULER",
-    "maxPlay": 1,
-    "status": "AVAILABLE"
+    "maxPlay": 0,
+    "status": "USED"
   },
   {
     "id": 104,
