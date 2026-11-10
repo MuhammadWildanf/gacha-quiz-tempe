@@ -12,7 +12,7 @@ public class QrWebSocketClient : MonoBehaviour
     public event Action OnDisconnected;
     public event Action<string> OnMessage;
 
-    [SerializeField] private string serverUrl = "ws://192.168.1.10:3005";
+    [SerializeField] private string serverUrl = "ws://192.168.1.10:3012";
     [SerializeField] private float reconnectDelay = 3f;
 
     private ClientWebSocket _socket;

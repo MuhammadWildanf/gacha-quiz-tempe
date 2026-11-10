@@ -6,7 +6,7 @@ const readline = require("readline");
 // ==========================================
 // ⚙️ KONFIGURASI
 // ==========================================
-const LOCAL_PORT = 3005; // Harus sama dengan PORT di local-server.js
+const LOCAL_PORT = 3012; // Harus sama dengan PORT di local-server.js
 const MACHINE_ID = "TEST-01";
 
 // Reset ledger supaya bisa tes dari awal

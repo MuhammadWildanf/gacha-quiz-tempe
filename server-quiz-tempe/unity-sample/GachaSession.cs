@@ -6,7 +6,7 @@ using UnityEngine.Events;
 public class GachaSession : MonoBehaviour
 {
     [Header("Konfigurasi Server")]
-    [SerializeField] private string serverUrl = "ws://192.168.1.10:3005";
+    [SerializeField] private string serverUrl = "ws://192.168.1.10:3012";
     [SerializeField] private string machineId = "GAME-01";
     [SerializeField] private bool debugLog = true;
 

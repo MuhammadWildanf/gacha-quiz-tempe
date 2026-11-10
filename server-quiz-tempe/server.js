@@ -18,7 +18,7 @@ app.use(express.json());
 // ==========================================
 // ⚙️ KONFIGURASI — Ubah di sini
 // ==========================================
-const PORT = 3005;
+const PORT = 3012;
 const LEDGER_FILE = path.join(__dirname, "tickets_local.json");
 
 const VendorClient = require("./vendor-client");
