@@ -7,7 +7,7 @@ using System;
 [Serializable]
 public class MachineConfig
 {
-    public string serverWsUrl = "ws://localhost:3012";
+    public string serverWsUrl = "ws://localhost:3005";
     public string quizApiUrl = "http://localhost:3011/api/quiz";
     public string machineId = "GAME-01";
     public string dispenserPort = "COM3";
@@ -32,7 +32,7 @@ public class MachineConfig
         if (string.IsNullOrWhiteSpace(serverWsUrl) ||
             (!serverWsUrl.StartsWith("ws://") && !serverWsUrl.StartsWith("wss://")))
         {
-            error = "URL Server harus ws:// atau wss:// (contoh ws://192.168.88.32:3012)";
+            error = "URL Server harus ws:// atau wss:// (contoh ws://192.168.88.32:3005)";
             return false;
         }
         if (string.IsNullOrWhiteSpace(quizApiUrl) ||

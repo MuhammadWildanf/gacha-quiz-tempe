@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections; // Menggunakan Coroutine wajib menyertakan System.Collections
 
-public class SelfTimerHandler : MonoBehaviour
+public class ObjectTimerHandler : MonoBehaviour
 {
     [Header("Settings")]
     [SerializeField] private float duration = 5f; // Durasi waktu (10 detik)

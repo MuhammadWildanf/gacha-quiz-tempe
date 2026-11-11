@@ -6,7 +6,7 @@ using UnityEngine.Events;
 public class GachaSession : MonoBehaviour
 {
     [Header("Konfigurasi Server")]
-    [SerializeField] private string serverUrl = "ws://192.168.1.10:3012";
+    [SerializeField] private string serverUrl = "ws://192.168.1.10:3005";
     [SerializeField] private string machineId = "GAME-01";
     [SerializeField] private bool debugLog = true;
 
@@ -126,7 +126,6 @@ public class GachaSession : MonoBehaviour
         _ws = gameObject.AddComponent<QrWebSocketClient>();
         _scanner = gameObject.AddComponent<QrScannerInput>();
         _scanner.OnScanned += HandleScannedCode;
-        _scanner.OnScanRejected += HandleLocalReject;
         Log($"[BOOT] Mesin {machineId} siap. Server={serverUrl} | Menang>={winMinPercentage}% ({winPrizeTier}) | Stok={(BallDispenserManager.Instance != null ? BallDispenserManager.Instance.GetStock().ToString() : "-")}");
         if (BallDispenserManager.Instance != null)
         {
@@ -638,7 +637,6 @@ public class GachaSession : MonoBehaviour
         if (_scanner != null)
         {
             _scanner.OnScanned -= HandleScannedCode;
-            _scanner.OnScanRejected -= HandleLocalReject;
         }
         if (_ws != null) _ws.OnMessage -= HandleServerMessage;
         if (BallDispenserManager.Instance != null)

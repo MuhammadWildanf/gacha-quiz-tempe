@@ -51,12 +51,22 @@ public class GameManagerGatcha : MonoBehaviour
     [Tooltip("Panel yang ditampilkan setelah quiz selesai")]
     public GameObject resultPanel;
 
+    [Tooltip("Text Judul Hasil (misal: 'Selamat!' / 'Maaf!')")]
+    public TMP_Text resultTitleText;
+
     [Tooltip("Text skor akhir pada result panel")]
     public TMP_Text finalScoreText;
 
-    [Tooltip("Text deskripsi hasil (opsional)")]
+    [Tooltip("Text deskripsi hasil (misal: 'Ambil hadiahmu dibawah ini')")]
     public TMP_Text resultDescriptionText;
 
+    [Tooltip("Container / Gambar bola gacha & dispenser (AmbilBola)")]
+    public GameObject gachaRewardContainer;
+
+    [Tooltip("Poin minimal yang harus dicapai player untuk mendapatkan Gacha")]
+    public int minimumScoreToWin = 60;
+
+    [Header("UI - Indicator")]
     [Tooltip("BG indikator jawaban (opsional)")]
     public GameObject BGbenar;
     public GameObject BGSalah;
@@ -129,10 +139,10 @@ public class GameManagerGatcha : MonoBehaviour
         MachineConfig cfg = SettingsStore.Load(new MachineConfig
         {
             pointsPerCorrect = pointsPerCorrect,
-            maxQuestions     = maxQuestions
+            maxQuestions = maxQuestions
         });
         pointsPerCorrect = Mathf.Max(1, cfg.pointsPerCorrect);
-        maxQuestions     = Mathf.Max(0, cfg.maxQuestions);
+        maxQuestions = Mathf.Max(0, cfg.maxQuestions);
         Debug.Log($"[GameManager] Config diterapkan: pointsPerCorrect={pointsPerCorrect}, maxQuestions={maxQuestions}");
     }
 
@@ -363,21 +373,39 @@ public class GameManagerGatcha : MonoBehaviour
 
     private void ShowResultPanel()
     {
-        if (resultPanel != null) resultPanel.SetActive(true);
+        if (resultPanel != null)
+            resultPanel.SetActive(true);
 
+        // Tampilkan teks skor akhir
         if (finalScoreText != null)
-            finalScoreText.text = $"{totalScore}";
+            finalScoreText.text = $"Poin mu {totalScore}";
 
-        if (resultDescriptionText != null)
+        // --- DINAMISASI HASIL MENANG VS KALAH ---
+        bool isWin = totalScore >= minimumScoreToWin;
+
+        if (isWin)
         {
-            int maxScore = selectedQuestions.Count * pointsPerCorrect;
-            float percentage = maxScore > 0 ? (float)totalScore / maxScore * 100f : 0f;
+            // Tampilan Menang (Dapat Gacha)
+            if (resultTitleText != null)
+                resultTitleText.text = "Selamat!";
 
-            string desc = percentage >= 80f ? "Luar biasa! 🎉"
-                        : percentage >= 50f ? "Bagus! Terus tingkatkan! 👍"
-                        : "Jangan menyerah, coba lagi! 💪";
+            if (resultDescriptionText != null)
+                resultDescriptionText.text = "Ambil hadiahmu dibawah ini";
 
-            resultDescriptionText.text = $"{desc}\n({totalScore} / {maxScore} poin)";
+            if (gachaRewardContainer != null)
+                gachaRewardContainer.SetActive(true);
+        }
+        else
+        {
+            // Tampilan Kalah (Tidak Dapat Gacha)
+            if (resultTitleText != null)
+                resultTitleText.text = "Jangan Berkecil Hati!";
+
+            if (resultDescriptionText != null)
+                resultDescriptionText.text = "Poin kamu belum cukup untuk ambil gacha.";
+
+            if (gachaRewardContainer != null)
+                gachaRewardContainer.SetActive(false);
         }
     }
 
