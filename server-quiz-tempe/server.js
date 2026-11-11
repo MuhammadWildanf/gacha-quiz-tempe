@@ -49,13 +49,17 @@ async function validateTicketWithVendor(code, deviceId) {
 
 
 async function claimTicketWithVendor(code, deviceId, score, isWin) {
-    if (!VENDOR_CLAIM_URL) return;
+    const claimUrl = process.env.VENDOR_CLAIM_URL || "";
+    if (!claimUrl) return;
     try {
         const headers = { "Content-Type": "application/json" };
-        if (VENDOR_API_TOKEN) {
-            headers[VENDOR_AUTH_HEADER] = `${VENDOR_AUTH_PREFIX}${VENDOR_API_TOKEN}`.trim();
+        const apiToken = process.env.VENDOR_API_TOKEN || "";
+        if (apiToken) {
+            const authHeader = process.env.VENDOR_AUTH_HEADER || "Authorization";
+            const authPrefix = process.env.VENDOR_AUTH_PREFIX || "Bearer ";
+            headers[authHeader] = `${authPrefix}${apiToken}`.trim();
         }
-        await fetch(VENDOR_CLAIM_URL, {
+        await fetch(claimUrl, {
             method: "POST",
             headers,
             body: JSON.stringify({ code, deviceId, score, isWin }),

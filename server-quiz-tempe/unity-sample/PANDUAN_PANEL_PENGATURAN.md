@@ -54,20 +54,23 @@ Canvas (teratas)
 ## Bagian 3 — Dim + Panel / card (3 menit)
 
 ### Dim (latar gelap, klik = Batal)
-| Properti | Nilai |
-|---|---|
+
+| Properti      | Nilai                                                      |
+| ------------- | ---------------------------------------------------------- |
 | RectTransform | preset **Stretch** (kiri-atas-kanan-bawah, offset 0 semua) |
-| Image Color | hitam, Alpha **190** (`0,0,0,190`) |
-| Button | Add Component → Button (tanpa teks) |
+| Image Color   | hitam, Alpha **190** (`0,0,0,190`)                         |
+| Button        | Add Component → Button (tanpa teks)                        |
 
 ### Panel (card abu teknisi)
-| Properti | Nilai |
-|---|---|
-| RectTransform | preset **Middle-Center**, Width **900**, Height **1450** |
-| Image Color | `#2B2F36` (abu teknisi). Opsional rounded: isi `Source Image` sprite rounded 9-slice |
-| Layout | manual saja (drag satu-satu, lihat Bagian 4). Jangan pakai Layout Group dulu supaya tidak lompat-lompat |
+
+| Properti      | Nilai                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| RectTransform | preset **Middle-Center**, Width **900**, Height **1450**                                                |
+| Image Color   | `#2B2F36` (abu teknisi). Opsional rounded: isi `Source Image` sprite rounded 9-slice                    |
+| Layout        | manual saja (drag satu-satu, lihat Bagian 4). Jangan pakai Layout Group dulu supaya tidak lompat-lompat |
 
 ### Simpan posisi awal
+
 - `Dim` dan `Panel`: **uncheck** (nonaktif) di Hierarchy. Script yang menyalakan saat dibuka.
 - `SettingsRoot` sendiri **tetap aktif** (hotspot dideteksi dari script, bukan tombol).
 
@@ -78,27 +81,27 @@ Canvas (teratas)
 Semua anak dari `Panel`. Buat via klik kanan `Panel` → UI → ….
 Urutan dari atas ke bawah (Y kira-kira, sesuaikan di Game View):
 
-| # | Objek | Cara buat | Setting penting |
-|---|---|---|---|
-| 1 | `Title` | UI → Text - TextMeshPro | Teks `PENGATURAN MESIN`, putih, Bold, **48**, alignment tengah, rect atas panel (Y +640, tinggi 80) |
-| 2 | `MachineBadge` | UI → Text - TextMeshPro | Teks `-`, abu muda `#AAAAAA`, **28**, di bawah Title. (Diisi otomatis? Tidak — kosongkan, hanya info. Boleh hapus baris ini kalau mau simpel) |
-| 3 | `LblServer` | TMP Text | `Server WS (ws://ip:port)`, `#CCCCCC`, **28**, rata kiri |
-| 4 | `ServerInput` | UI → Input Field - TextMeshPro | Placeholder `ws://192.168.88.32:3005`, Content Type **Standard**, text **30**, background putih, text color hitam |
-| 5 | `LblQuiz` | TMP Text | `API Kuis (http://ip:port/api/quiz)` |
-| 6 | `QuizInput` | TMP InputField | Placeholder `http://192.168.88.32:3011/api/quiz` |
-| 7 | `LblMID` | TMP Text | `Machine ID (unik per mesin)` |
-| 8 | `MidInput` | TMP InputField | Placeholder `GAME-01`, Content Type **Single Line**, Character Limit **20** |
-| 9 | `AutoToggle` | UI → Toggle | Label `Auto-detect COM`, teks putih **30**. Biarkan **mati** (OFF) karena scanner menempati COM lain |
-| 10 | `LblCOM` | TMP Text | `Port Dispenser (Arduino)` |
-| 11 | `ComDropdown` | UI → Dropdown - TextMeshPro | **Hapus semua Options** di Inspector (diisi otomatis). Template default cukup |
-| 12 | `RefreshBtn` | UI → Button - TextMeshPro | Teks `Refresh`, lebar ~250, di kanan dropdown |
-| 13 | `WsStatus` | TMP Text | Teks `-`, **28** (diisi otomatis ● Terhubung/Terputus) |
-| 14 | `DispenserStatus` | TMP Text | Teks `-`, **28** |
-| 15 | `TestBtn` | Button-TMP | Teks `Test PUSH`, background abu muda, teks hitam |
-| 16 | `Footer` | TMP Text | Teks `-`, kuning muda `#FFE082`, **26**, 2 baris (pesan Simpan/Gagal tampil di sini) |
-| 17 | `SaveBtn` | Button-TMP | Teks `Simpan`, background hijau `#1E7E34`, teks putih, Bold |
-| 18 | `BatalBtn` | Button-TMP | Teks `Batal`, background abu `#6C757D`, teks putih |
-| 19 | `XBtn` | Button-TMP | Teks `X`, kecil 80x80, pojok kanan-atas panel |
+| #   | Objek             | Cara buat                      | Setting penting                                                                                                                               |
+| --- | ----------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `Title`           | UI → Text - TextMeshPro        | Teks `PENGATURAN MESIN`, putih, Bold, **48**, alignment tengah, rect atas panel (Y +640, tinggi 80)                                           |
+| 2   | `MachineBadge`    | UI → Text - TextMeshPro        | Teks `-`, abu muda `#AAAAAA`, **28**, di bawah Title. (Diisi otomatis? Tidak — kosongkan, hanya info. Boleh hapus baris ini kalau mau simpel) |
+| 3   | `LblServer`       | TMP Text                       | `Server WS (ws://ip:port)`, `#CCCCCC`, **28**, rata kiri                                                                                      |
+| 4   | `ServerInput`     | UI → Input Field - TextMeshPro | Placeholder `ws://192.168.88.32:3012`, Content Type **Standard**, text **30**, background putih, text color hitam                             |
+| 5   | `LblQuiz`         | TMP Text                       | `API Kuis (http://ip:port/api/quiz)`                                                                                                          |
+| 6   | `QuizInput`       | TMP InputField                 | Placeholder `http://192.168.88.32:3011/api/quiz`                                                                                              |
+| 7   | `LblMID`          | TMP Text                       | `Machine ID (unik per mesin)`                                                                                                                 |
+| 8   | `MidInput`        | TMP InputField                 | Placeholder `GAME-01`, Content Type **Single Line**, Character Limit **20**                                                                   |
+| 9   | `AutoToggle`      | UI → Toggle                    | Label `Auto-detect COM`, teks putih **30**. Biarkan **mati** (OFF) karena scanner menempati COM lain                                          |
+| 10  | `LblCOM`          | TMP Text                       | `Port Dispenser (Arduino)`                                                                                                                    |
+| 11  | `ComDropdown`     | UI → Dropdown - TextMeshPro    | **Hapus semua Options** di Inspector (diisi otomatis). Template default cukup                                                                 |
+| 12  | `RefreshBtn`      | UI → Button - TextMeshPro      | Teks `Refresh`, lebar ~250, di kanan dropdown                                                                                                 |
+| 13  | `WsStatus`        | TMP Text                       | Teks `-`, **28** (diisi otomatis ● Terhubung/Terputus)                                                                                        |
+| 14  | `DispenserStatus` | TMP Text                       | Teks `-`, **28**                                                                                                                              |
+| 15  | `TestBtn`         | Button-TMP                     | Teks `Test PUSH`, background abu muda, teks hitam                                                                                             |
+| 16  | `Footer`          | TMP Text                       | Teks `-`, kuning muda `#FFE082`, **26**, 2 baris (pesan Simpan/Gagal tampil di sini)                                                          |
+| 17  | `SaveBtn`         | Button-TMP                     | Teks `Simpan`, background hijau `#1E7E34`, teks putih, Bold                                                                                   |
+| 18  | `BatalBtn`        | Button-TMP                     | Teks `Batal`, background abu `#6C757D`, teks putih                                                                                            |
+| 19  | `XBtn`            | Button-TMP                     | Teks `X`, kecil 80x80, pojok kanan-atas panel                                                                                                 |
 
 Tips cepat: buat 1 label + 1 input yang rapi, lalu **Duplicate (Ctrl+D)** untuk label/input berikutnya, tinggal ganti teksnya.
 
@@ -108,24 +111,24 @@ Tips cepat: buat 1 label + 1 input yang rapi, lalu **Duplicate (Ctrl+D)** untuk 
 
 Klik `SettingsRoot` (yang ada `SettingsPanel`). Drag dari Hierarchy ke slot:
 
-| Slot script | Drag objek |
-|---|---|
-| Dim Object | `Dim` |
-| Panel Object | `Panel` |
-| Server Url Input | `ServerInput` |
-| Quiz Url Input | `QuizInput` |
-| Machine Id Input | `MidInput` |
-| Auto Detect Toggle | `AutoToggle` |
-| Com Dropdown | `ComDropdown` |
-| Ws Status Text | `WsStatus` |
-| Dispenser Status Text | `DispenserStatus` |
-| Footer Text | `Footer` |
-| Refresh Button | `RefreshBtn` |
-| Test Button | `TestBtn` |
-| Save Button | `SaveBtn` |
-| Cancel Button | `BatalBtn` |
-| Close Button | `XBtn` |
-| Dim Button | `Dim` (iya, objek yang sama — klik latar = Batal) |
+| Slot script           | Drag objek                                        |
+| --------------------- | ------------------------------------------------- |
+| Dim Object            | `Dim`                                             |
+| Panel Object          | `Panel`                                           |
+| Server Url Input      | `ServerInput`                                     |
+| Quiz Url Input        | `QuizInput`                                       |
+| Machine Id Input      | `MidInput`                                        |
+| Auto Detect Toggle    | `AutoToggle`                                      |
+| Com Dropdown          | `ComDropdown`                                     |
+| Ws Status Text        | `WsStatus`                                        |
+| Dispenser Status Text | `DispenserStatus`                                 |
+| Footer Text           | `Footer`                                          |
+| Refresh Button        | `RefreshBtn`                                      |
+| Test Button           | `TestBtn`                                         |
+| Save Button           | `SaveBtn`                                         |
+| Cancel Button         | `BatalBtn`                                        |
+| Close Button          | `XBtn`                                            |
+| Dim Button            | `Dim` (iya, objek yang sama — klik latar = Batal) |
 
 > Tombol tidak perlu dihubungkan manual via OnClick — script mendaftarkan sendiri di `Awake()`.
 > Hotspot pojok juga tidak butuh objek — murni deteksi posisi tap di `Update()`.
@@ -169,16 +172,16 @@ Kalau nama field/metode beda, sesuaikan. `SettingsPanel` otomatis memakai method
 
 ## Troubleshooting
 
-| Gejala | Penyebab umum | Fix |
-|---|---|---|
-| Slot script tidak bisa di-drop | Objek dibuat dari komponen lama (non-TMP) | Hapus, buat ulang yang ada tulisan **TextMeshPro** |
-| Panel tidak pernah terbuka | Tap tidak di sudut / > 6 detik / script tidak di `SettingsRoot` yang aktif | Klik 220 px dari sudut, cepat, pastikan `SettingsRoot` aktif |
-| Dropdown selalu `(tidak ada COM)` | Tidak ada USB serial / driver belum install | Install driver CH340/CP210x, colok alat, Refresh |
-| Test gagal terus | Salah COM (kena scanner) / port dikunci Serial Monitor | Pilih COM Arduino (CH340/CP210x), tutup Serial Monitor, Refresh, Test lagi |
-| URL kuis tidak berubah | Setter Bagian 6 belum ditambah | Tambah `SetApiUrl`, Play ulang |
-| Scan mengetik ke kolom panel | Scanner HID mengetik ke input yang fokus | Jangan scan saat panel terbuka; klik Batal dulu. Ini perilaku bawaan scanner keyboard |
-| PlayerPrefs tidak persist di build | Build di-run sebagai user berbeda / registry dibersihkan | Normal per OS-user; tiap akun Windows = setting sendiri |
-| Tulisan terpotong di build | Lihat panduan Canvas: Overlay + Scale With Screen Size + Reference 1080x1920 + Match 0.5/Height | Samakan 2 Canvas |
+| Gejala                             | Penyebab umum                                                                                   | Fix                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Slot script tidak bisa di-drop     | Objek dibuat dari komponen lama (non-TMP)                                                       | Hapus, buat ulang yang ada tulisan **TextMeshPro**                                    |
+| Panel tidak pernah terbuka         | Tap tidak di sudut / > 6 detik / script tidak di `SettingsRoot` yang aktif                      | Klik 220 px dari sudut, cepat, pastikan `SettingsRoot` aktif                          |
+| Dropdown selalu `(tidak ada COM)`  | Tidak ada USB serial / driver belum install                                                     | Install driver CH340/CP210x, colok alat, Refresh                                      |
+| Test gagal terus                   | Salah COM (kena scanner) / port dikunci Serial Monitor                                          | Pilih COM Arduino (CH340/CP210x), tutup Serial Monitor, Refresh, Test lagi            |
+| URL kuis tidak berubah             | Setter Bagian 6 belum ditambah                                                                  | Tambah `SetApiUrl`, Play ulang                                                        |
+| Scan mengetik ke kolom panel       | Scanner HID mengetik ke input yang fokus                                                        | Jangan scan saat panel terbuka; klik Batal dulu. Ini perilaku bawaan scanner keyboard |
+| PlayerPrefs tidak persist di build | Build di-run sebagai user berbeda / registry dibersihkan                                        | Normal per OS-user; tiap akun Windows = setting sendiri                               |
+| Tulisan terpotong di build         | Lihat panduan Canvas: Overlay + Scale With Screen Size + Reference 1080x1920 + Match 0.5/Height | Samakan 2 Canvas                                                                      |
 
 ---
 
