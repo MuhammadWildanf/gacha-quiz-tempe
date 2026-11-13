@@ -22,8 +22,12 @@ const PORT = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 6553
 
 const VendorClient = require("./vendor-client");
 const settings = require("./settings");
-const { loadLedger, saveLedger, LEDGER_FILE } = require("./ledger");
+const { loadLedger, saveLedger, checkWritable, LEDGER_FILE } = require("./ledger");
 const { renderDashboard } = require("./views/dashboard");
+
+// Naikkan saat ada perubahan penting, supaya mudah memastikan VPS sudah
+// menjalankan kode terbaru (cek GET /api/config).
+const APP_VERSION = "2026-11-13.2";
 
 // --- MODE VALIDASI SCAN TIKET ---
 // "LOCAL_FORMAT" = Offline (cek format lokal)
@@ -88,6 +92,17 @@ function applyMaxAttemptsToActiveTickets(maxAttempts) {
     return changed;
 }
 
+// Simpan ledger dengan error yang jelas (jangan diam-diam gagal).
+function trySaveLedger(ledger, context) {
+    try {
+        saveLedger(ledger);
+        return true;
+    } catch (err) {
+        console.error(`❌ [LEDGER] GAGAL MENYIMPAN (${context}): ${err.message}`);
+        return false;
+    }
+}
+
 // Cari socket mesin yang masih hidup (untuk cek pemilik tiket pending).
 function getMachineSocket(machineId) {
     if (!machineId) return null;
@@ -110,7 +125,9 @@ function buildScanSuccess(entry, qrCode, now, resumed, message) {
         usedAt: entry.usedAt || now,
         attemptCount: entry.attemptCount,
         maxAttempts: entry.maxAttempts,
-        attemptsRemaining: Math.max(0, entry.maxAttempts - entry.attemptCount)
+        attemptsRemaining: Math.max(0, entry.maxAttempts - entry.attemptCount),
+        // Dikirim supaya Unity bisa menyamakan tampilan/log dengan aturan server.
+        winMinPercentage: settings.get().winMinPercentage
     };
 }
 
@@ -184,7 +201,7 @@ wss.on("connection", (ws) => {
                 if (existing && existing.attemptCount >= existing.maxAttempts) {
                     existing.state = "used";
                     existing.completedAt = existing.completedAt || now;
-                    saveLedger(ledger);
+                    trySaveLedger(ledger, "attempts-exhausted");
                     ws.send(JSON.stringify({
                         type: "scan_result", success: false, reason: "ATTEMPTS_EXHAUSTED",
                         message: "Kesempatan bermain tiket ini sudah habis."
@@ -216,7 +233,13 @@ wss.on("connection", (ws) => {
                     existing.usedByMachine = machineId;
                     existing.usedAt = existing.usedAt || now;
                     existing.inProgress = true;
-                    saveLedger(ledger);
+                    if (!trySaveLedger(ledger, "resume-pending")) {
+                        ws.send(JSON.stringify({
+                            type: "scan_result", success: false, reason: "STORAGE_ERROR",
+                            message: "Server gagal menyimpan data tiket. Hubungi petugas."
+                        }));
+                        return;
+                    }
                     console.log(`♻️ [WS] Resume sesi QR ${scannedQr} di mesin ${machineId}. ` +
                         `Percobaan selesai ${existing.attemptCount}/${existing.maxAttempts}; Vendor API dilewati.`);
 
@@ -235,7 +258,13 @@ wss.on("connection", (ws) => {
                     existing.usedByMachine = machineId;
                     existing.usedAt = now;
                     existing.inProgress = true;
-                    saveLedger(ledger);
+                    if (!trySaveLedger(ledger, "re-admit")) {
+                        ws.send(JSON.stringify({
+                            type: "scan_result", success: false, reason: "STORAGE_ERROR",
+                            message: "Server gagal menyimpan data tiket. Hubungi petugas."
+                        }));
+                        return;
+                    }
                     console.log(`🔁 [WS] QR ${scannedQr} bermain lagi di mesin ${machineId}. ` +
                         `Percobaan selesai ${existing.attemptCount}/${existing.maxAttempts}; Vendor API dilewati.`);
 
@@ -247,6 +276,18 @@ wss.on("connection", (ws) => {
                 }
 
                 // === Tiket BARU (belum pernah ada di ledger) → validasi Vendor ===
+                // Pastikan ledger bisa ditulis DULU. Kalau tidak, jangan panggil
+                // Vendor: kuota tiket akan terpakai tapi tidak tercatat lokal.
+                const writable = checkWritable();
+                if (!writable.ok) {
+                    console.error(`❌ [LEDGER] Tidak bisa menulis ke ${LEDGER_FILE}: ${writable.error}`);
+                    ws.send(JSON.stringify({
+                        type: "scan_result", success: false, reason: "STORAGE_ERROR",
+                        message: "Server gagal menyimpan data tiket. Hubungi petugas."
+                    }));
+                    return;
+                }
+
                 console.log(`🆕 [WS] QR ${scannedQr.slice(0, 12)}… belum ada di ledger → validasi ke Vendor.`);
                 let vendorRes;
                 scansInProgress.add(scannedQr);
@@ -276,6 +317,48 @@ wss.on("connection", (ws) => {
                 const ticketType = vendorRes.data?.ticketType || null;
                 const successMessage = vendorRes.message || "Tiket valid, selamat gacha!";
 
+                // PENTING (multi-mesin): panggilan Vendor di atas memakai `await`.
+                // Selama menunggu, scan dari mesin lain bisa sudah menyimpan entri.
+                // Jangan menulis memakai array `ledger` lama (bisa menimpa data
+                // mesin lain). Baca ulang dari disk tepat sebelum menyimpan.
+                const freshLedger = loadLedger();
+                const concurrent = freshLedger.find(e => e.qrCode === scannedQr);
+
+                if (concurrent) {
+                    ensureAttemptData(concurrent);
+                    if (concurrent.state === "used" || concurrent.attemptCount >= concurrent.maxAttempts) {
+                        ws.send(JSON.stringify({
+                            type: "scan_result", success: false, reason: "ALREADY_USED",
+                            message: "Tiket ini sudah menyelesaikan permainan dan tidak bisa digunakan kembali."
+                        }));
+                        return;
+                    }
+                    concurrent.state = "pending";
+                    concurrent.usedByMachine = machineId;
+                    concurrent.usedAt = now;
+                    concurrent.inProgress = true;
+                    if (!trySaveLedger(freshLedger, "scan-concurrent")) {
+                        ws.send(JSON.stringify({
+                            type: "scan_result", success: false, reason: "STORAGE_ERROR",
+                            message: "Server gagal menyimpan data tiket. Hubungi petugas."
+                        }));
+                        return;
+                    }
+                    console.log(`♻️ [WS] QR ${scannedQr.slice(0, 12)}… sudah tercatat saat validasi Vendor → lanjutkan sesi.`);
+                    ws.send(JSON.stringify(buildScanSuccess(
+                        concurrent, scannedQr, now, true,
+                        "Tiket ditemukan. Silakan lanjutkan permainan."
+                    )));
+                    broadcast({
+                        type: "ticket_claimed", qrCode: scannedQr, ticketId: concurrent.ticketId,
+                        machineId, usedAt: now,
+                        attemptCount: concurrent.attemptCount,
+                        maxAttempts: concurrent.maxAttempts,
+                        attemptsRemaining: Math.max(0, concurrent.maxAttempts - concurrent.attemptCount)
+                    });
+                    return;
+                }
+
                 existing = ensureAttemptData({
                     qrCode: scannedQr, ticketId, guestName, ticketType,
                     scanMode: SCAN_MODE, state: "pending", usedAt: now,
@@ -283,15 +366,23 @@ wss.on("connection", (ws) => {
                     maxAttempts: settings.get().maxGameAttempts, attempts: [],
                     inProgress: true
                 });
-                ledger.push(existing);
-                saveLedger(ledger);
+                freshLedger.push(existing);
+                if (!trySaveLedger(freshLedger, "scan-baru")) {
+                    ws.send(JSON.stringify({
+                        type: "scan_result", success: false, reason: "STORAGE_ERROR",
+                        message: "Server gagal menyimpan data tiket. Hubungi petugas."
+                    }));
+                    return;
+                }
+                console.log(`💾 [WS] QR ${scannedQr.slice(0, 12)}… tersimpan di ledger (state=pending, attempt=0/${existing.maxAttempts}).`);
 
                 ws.send(JSON.stringify({
                     type: "scan_result", success: true, reason: "VALID",
                     message: successMessage, ticketId, guestName, usedAt: now,
                     attemptCount: existing.attemptCount,
                     maxAttempts: existing.maxAttempts,
-                    attemptsRemaining: Math.max(0, existing.maxAttempts - existing.attemptCount)
+                    attemptsRemaining: Math.max(0, existing.maxAttempts - existing.attemptCount),
+                    winMinPercentage: settings.get().winMinPercentage
                 }));
 
                 broadcast({
@@ -389,7 +480,13 @@ wss.on("connection", (ws) => {
                     entry.usedByMachine = null;
                 }
 
-                saveLedger(ledger);
+                if (!trySaveLedger(ledger, "game-finish")) {
+                    ws.send(JSON.stringify({
+                        type: "game_finish_result", success: false, reason: "STORAGE_ERROR",
+                        message: "Server gagal menyimpan hasil permainan. Hubungi petugas."
+                    }));
+                    return;
+                }
 
                 const outcome = finalWin ? "MENANG 🏆"
                     : attemptsExhausted ? "KALAH - KESEMPATAN HABIS"
@@ -602,6 +699,7 @@ app.get("/api/config", (req, res) => {
     const cfg = settings.get();
     res.json({
         success: true,
+        version: APP_VERSION,
         winMinPercentage: cfg.winMinPercentage,
         winPrizeDefault: WIN_PRIZE_DEFAULT,
         maxGameAttempts: cfg.maxGameAttempts
@@ -748,6 +846,7 @@ app.get("/", (req, res) => {
 
 server.listen(PORT, async () => {
     console.log(`========================================`);
+    console.log(`Server version  : ${APP_VERSION}`);
     console.log("VENDOR_BASE_URL =", VENDOR_BASE_URL);
     console.log("DEVICE_SNS      =", vendorClient.deviceList.join(", "));
     console.log(`WebSocket       : ws://localhost:${PORT}`);
@@ -760,6 +859,15 @@ server.listen(PORT, async () => {
     console.log(`Data ledger     : ${LEDGER_FILE}`);
     console.log(`Data settings   : ${settings.file}`);
     console.log(`Ledger saat ini : ${loadLedger().length} entri`);
+
+    const storage = checkWritable();
+    if (storage.ok) {
+        console.log("✅ [LEDGER] Folder data bisa ditulis. Tiket akan tersimpan & bisa discan ulang tanpa Vendor.");
+    } else {
+        console.error(`❌ [LEDGER] TIDAK BISA MENULIS ke ${LEDGER_FILE}`);
+        console.error(`   Penyebab: ${storage.error}`);
+        console.error("   ⚠️ Tiket TIDAK akan tersimpan → scan ulang akan memanggil Vendor dan bisa ALREADY_USED.");
+    }
     console.log(`========================================\n`);
 
     // Inisialisasi Device ke Vendor API

@@ -43,4 +43,18 @@ function saveLedger(data) {
     }
 }
 
-module.exports = { loadLedger, saveLedger, LEDGER_FILE };
+// Cek folder data benar-benar bisa ditulis. Kalau tidak, tiket TIDAK akan
+// tersimpan dan scan ulang akan selalu memanggil Vendor (ALREADY_USED).
+function checkWritable() {
+    try {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+        const probe = path.join(DATA_DIR, `.write-test-${process.pid}`);
+        fs.writeFileSync(probe, "ok");
+        fs.unlinkSync(probe);
+        return { ok: true };
+    } catch (err) {
+        return { ok: false, error: err.message };
+    }
+}
+
+module.exports = { loadLedger, saveLedger, checkWritable, LEDGER_FILE, DATA_DIR };
