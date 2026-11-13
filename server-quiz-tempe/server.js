@@ -143,6 +143,32 @@ wss.on("connection", (ws) => {
                     return;
                 }
 
+                // RESUME SESSION:
+                // Jika tiket masih pending dan discan kembali dari mesin yang sama,
+                // jangan panggil Vendor API lagi. Vendor mungkin sudah menandai tiket
+                // sebagai ALREADY_USED pada validasi pertama, padahal game belum selesai.
+                // Pending tidak menambah attempt; attempt hanya dihitung saat game_finish.
+                if (existing && existing.state === "pending" && existing.usedByMachine === machineId) {
+                    const attemptsRemaining = Math.max(0, existing.maxAttempts - existing.attemptCount);
+                    console.log(`♻️ [WS] Resume sesi QR ${scannedQr} di mesin ${machineId}. ` +
+                        `Percobaan selesai ${existing.attemptCount}/${existing.maxAttempts}; Vendor API dilewati.`);
+
+                    ws.send(JSON.stringify({
+                        type: "scan_result",
+                        success: true,
+                        reason: "VALID",
+                        resumed: true,
+                        message: "Sesi permainan sebelumnya ditemukan. Silakan lanjutkan permainan.",
+                        ticketId: existing.ticketId || scannedQr,
+                        guestName: existing.guestName || null,
+                        usedAt: existing.usedAt || now,
+                        attemptCount: existing.attemptCount,
+                        maxAttempts: existing.maxAttempts,
+                        attemptsRemaining
+                    }));
+                    return;
+                }
+
                 if (existing && existing.state === "used") {
                     ws.send(JSON.stringify({
                         type: "scan_result", success: false, reason: "ALREADY_USED",
@@ -309,7 +335,7 @@ wss.on("connection", (ws) => {
 
                 const outcome = finalWin ? "MENANG 🏆"
                     : attemptsExhausted ? "KALAH - KESEMPATAN HABIS"
-                        : "KALAH - BOLEH COBA LAGI";
+                    : "KALAH - BOLEH COBA LAGI";
 
                 console.log(
                     `🎮 [WS] [${now}] QR ${scannedQr} percobaan ${entry.attemptCount}/${entry.maxAttempts}, ` +
@@ -403,8 +429,8 @@ app.get("/api/ledger/:qrCode", (req, res) => {
     const entry = ledger.find(e => e.qrCode === qrCode);
     const status = !entry ? "NOT_IN_LEDGER"
         : entry.state === "used" ? "USED"
-            : entry.state === "retry_allowed" ? "RETRY_ALLOWED"
-                : "PENDING";
+        : entry.state === "retry_allowed" ? "RETRY_ALLOWED"
+        : "PENDING";
 
     res.json({
         success: true,
