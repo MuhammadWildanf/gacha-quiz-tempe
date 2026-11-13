@@ -11,7 +11,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const SETTINGS_FILE = path.join(__dirname, "settings_local.json");
+// Sama seperti ledger: bisa diarahkan ke volume persisten lewat DATA_DIR.
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : __dirname;
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const SETTINGS_FILE = path.join(DATA_DIR, "settings_local.json");
 
 const LIMITS = {
     maxGameAttempts: { min: 1, max: 50 },

@@ -9,7 +9,12 @@
 const fs = require("fs");
 const path = require("path");
 
-const LEDGER_FILE = path.join(__dirname, "tickets_local.json");
+// Di VPS/Docker, arahkan DATA_DIR ke volume persisten (mis. /app/data)
+// supaya ledger tidak hilang setiap container di-rebuild.
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : __dirname;
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const LEDGER_FILE = path.join(DATA_DIR, "tickets_local.json");
 
 function loadLedger() {
     if (!fs.existsSync(LEDGER_FILE)) return [];

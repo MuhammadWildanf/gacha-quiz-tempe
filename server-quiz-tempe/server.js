@@ -22,7 +22,7 @@ const PORT = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 6553
 
 const VendorClient = require("./vendor-client");
 const settings = require("./settings");
-const { loadLedger, saveLedger } = require("./ledger");
+const { loadLedger, saveLedger, LEDGER_FILE } = require("./ledger");
 const { renderDashboard } = require("./views/dashboard");
 
 // --- MODE VALIDASI SCAN TIKET ---
@@ -247,6 +247,7 @@ wss.on("connection", (ws) => {
                 }
 
                 // === Tiket BARU (belum pernah ada di ledger) → validasi Vendor ===
+                console.log(`🆕 [WS] QR ${scannedQr.slice(0, 12)}… belum ada di ledger → validasi ke Vendor.`);
                 let vendorRes;
                 scansInProgress.add(scannedQr);
                 try {
@@ -423,7 +424,7 @@ wss.on("connection", (ws) => {
             }
 
         } catch (err) {
-            console.error("❌ [WS] Error parsing pesan dari Unity:", err);
+            console.error("❌ [WS] Gagal memproses pesan dari Unity:", err);
         }
     });
 
@@ -539,6 +540,57 @@ app.get("/api/release/:qrCode", (req, res) => {
     saveLedger(ledger);
     console.log(`♻️ [API] Tiket ${qrCode} dilepas manual → ${entry.state}.`);
     res.json({ success: true, message: "Tiket dilepas dan bisa discan ulang (tanpa validasi Vendor).", entry });
+});
+
+// ==========================================
+// Pemulihan tiket (darurat)
+// Kalau kuota tiket sudah terpakai di Vendor tapi permainan belum selesai
+// (mis. ledger sempat hilang / container ter-rebuild), tiket bisa diizinkan
+// scan ulang TANPA memanggil Vendor lagi.
+// Body JSON: { qrCode }
+app.post("/api/tickets/allow", (req, res) => {
+    const qrCode = String(req.body?.qrCode || "").trim();
+    if (!qrCode) {
+        return res.status(400).json({ success: false, message: "qrCode wajib diisi." });
+    }
+
+    const ledger = loadLedger();
+    let entry = ledger.find(e => e.qrCode === qrCode);
+
+    if (entry && entry.state === "used") {
+        return res.status(409).json({ success: false, message: "Tiket sudah selesai (used), tidak bisa diizinkan ulang." });
+    }
+
+    if (!entry) {
+        entry = ensureAttemptData({
+            qrCode,
+            ticketId: qrCode,
+            guestName: null,
+            ticketType: null,
+            scanMode: SCAN_MODE,
+            state: "released",
+            usedAt: getTimestamp(),
+            usedByMachine: null,
+            attemptCount: 0,
+            maxAttempts: settings.get().maxGameAttempts,
+            attempts: [],
+            inProgress: false,
+            manualAllow: true,
+            allowedAt: getTimestamp()
+        });
+        ledger.push(entry);
+    } else {
+        ensureAttemptData(entry);
+        entry.state = entry.attemptCount > 0 ? "retry_allowed" : "released";
+        entry.usedByMachine = null;
+        entry.inProgress = false;
+        entry.manualAllow = true;
+        entry.allowedAt = getTimestamp();
+    }
+
+    saveLedger(ledger);
+    console.log(`🛟 [API] Tiket ${qrCode.slice(0, 16)}… diizinkan scan ulang manual (Vendor dilewati).`);
+    res.json({ success: true, message: "Tiket diizinkan scan ulang tanpa Vendor.", data: entry });
 });
 
 // ==========================================
@@ -705,6 +757,9 @@ server.listen(PORT, async () => {
     const cfg = settings.get();
     console.log(`API Config      : http://localhost:${PORT}/api/config (threshold menang ${cfg.winMinPercentage}%, max attempt ${cfg.maxGameAttempts}x)`);
     console.log(`API Settings    : http://localhost:${PORT}/api/settings (GET/POST, ubah dari dashboard)`);
+    console.log(`Data ledger     : ${LEDGER_FILE}`);
+    console.log(`Data settings   : ${settings.file}`);
+    console.log(`Ledger saat ini : ${loadLedger().length} entri`);
     console.log(`========================================\n`);
 
     // Inisialisasi Device ke Vendor API
