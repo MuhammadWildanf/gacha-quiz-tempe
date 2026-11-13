@@ -5,6 +5,7 @@
 # Unity Build — jangan di-push ke GitHub (besar, binary)
 # Copy manual ke PC baru via USB/Drive/dll
 UnityBuild/
+buildnew/
 
 # Log files
 logs/
