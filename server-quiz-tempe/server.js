@@ -34,6 +34,12 @@ const VENDOR_API_KEY = process.env.VENDOR_API_KEY || "mk_tempe_gacha_test";
 const VENDOR_SECRET = process.env.VENDOR_SECRET || "mock-vendor-secret-key-12345";
 const DEVICE_SNS = process.env.DEVICE_SNS || process.env.DEVICE_SN || "gacha-001";
 
+const parsedMaxAttempts = parseInt(process.env.MAX_GAME_ATTEMPTS || "3", 10);
+const MAX_GAME_ATTEMPTS =
+    Number.isInteger(parsedMaxAttempts) && parsedMaxAttempts > 0
+        ? parsedMaxAttempts
+        : 3;
+
 // Inisialisasi Vendor Client Multi-Device
 const vendorClient = new VendorClient({
     baseUrl: VENDOR_BASE_URL,
@@ -48,33 +54,8 @@ async function validateTicketWithVendor(code, deviceId) {
 }
 
 
-async function claimTicketWithVendor(code, deviceId, score, isWin) {
-    const claimUrl = process.env.VENDOR_CLAIM_URL || "";
-    if (!claimUrl) return;
-    try {
-        const headers = { "Content-Type": "application/json" };
-        const apiToken = process.env.VENDOR_API_TOKEN || "";
-        if (apiToken) {
-            const authHeader = process.env.VENDOR_AUTH_HEADER || "Authorization";
-            const authPrefix = process.env.VENDOR_AUTH_PREFIX || "Bearer ";
-            headers[authHeader] = `${authPrefix}${apiToken}`.trim();
-        }
-        await fetch(claimUrl, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ code, deviceId, score, isWin }),
-            signal: AbortSignal.timeout(6000)
-        });
-        console.log(`✅ [VENDOR API] Klaim game selesai terkirim ke vendor.`);
-    } catch (err) {
-        console.error(`⚠️ [VENDOR API] Gagal kirim klaim tiket ke vendor: ${err.message}`);
-    }
-}
-
-// --- Aturan menang (koin) — SAMAKAN dengan GachaSession.winMinPercentage di Unity ---
-// isWin final = (score/maxScore*100 >= WIN_MIN_PERCENTAGE). Bisa diubah tanpa ubah logika.
+// Aturan menang dihitung oleh server dari persentase skor.
 const WIN_MIN_PERCENTAGE = 80;
-// Hadiah default jika Unity kirim isWin=true tanpa prizeTier
 const WIN_PRIZE_DEFAULT = "HADIAH";
 
 // ==========================================
@@ -87,6 +68,16 @@ function loadLedger() {
 
 function saveLedger(data) {
     fs.writeFileSync(LEDGER_FILE, JSON.stringify(data, null, 2));
+}
+
+// Lock sederhana agar QR yang sama tidak divalidasi bersamaan dalam satu proses.
+const scansInProgress = new Set();
+
+function ensureAttemptData(entry) {
+    if (!Number.isInteger(entry.attemptCount) || entry.attemptCount < 0) entry.attemptCount = 0;
+    if (!Number.isInteger(entry.maxAttempts) || entry.maxAttempts < 1) entry.maxAttempts = MAX_GAME_ATTEMPTS;
+    if (!Array.isArray(entry.attempts)) entry.attempts = [];
+    return entry;
 }
 
 // Bikin timestamp yang mudah dibaca: "09/09/2026 17:30:00"
@@ -122,119 +113,123 @@ wss.on("connection", (ws) => {
             // EVENT: Mesin Unity scan QR
             // ----------------------------------------
             if (data.type === "scan_qr") {
-                const scannedQr = (data.qrCode || "").trim();
-                const machineId = data.machineId || "UNKNOWN_DEVICE";
+                const scannedQr = String(data.qrCode || "").trim();
+                const machineId = String(data.machineId || "UNKNOWN_DEVICE");
                 const now = getTimestamp();
                 ws.machineId = machineId;
+
+                if (!scannedQr) {
+                    ws.send(JSON.stringify({ type: "scan_result", success: false, reason: "EMPTY_QR", message: "QR Code kosong." }));
+                    return;
+                }
 
                 console.log(`\n🔍 [WS] [${now}] Mesin [${machineId}] scan: ${scannedQr} (Mode: ${SCAN_MODE})`);
 
                 const ledger = loadLedger();
-                const existing = ledger.find(e => e.qrCode === scannedQr);
+                let existing = ledger.find(e => e.qrCode === scannedQr);
 
-                // Sedang diproses mesin LAIN → tolak sementara
+                if (scansInProgress.has(scannedQr)) {
+                    ws.send(JSON.stringify({ type: "scan_result", success: false, reason: "PENDING", message: "QR sedang divalidasi. Silakan coba kembali." }));
+                    return;
+                }
+
+                if (existing) ensureAttemptData(existing);
+
                 if (existing && existing.state === "pending" && existing.usedByMachine !== machineId) {
-                    console.log(`⏳ [WS] QR ${scannedQr} sedang diproses di mesin ${existing.usedByMachine}.`);
                     ws.send(JSON.stringify({
-                        type: "scan_result",
-                        success: false,
-                        reason: "PENDING",
+                        type: "scan_result", success: false, reason: "PENDING",
                         message: `Tiket ini sedang diproses di mesin ${existing.usedByMachine}.`
                     }));
                     return;
                 }
 
-                // Sudah selesai dipakai di sistem kita → tolak permanen
                 if (existing && existing.state === "used") {
-                    console.log(`❌ [WS] QR ${scannedQr} sudah SELESAI dipakai gacha di sistem lokal.`);
                     ws.send(JSON.stringify({
-                        type: "scan_result",
-                        success: false,
-                        reason: "ALREADY_USED",
-                        message: "Tiket ini sudah pernah digunakan."
+                        type: "scan_result", success: false, reason: "ALREADY_USED",
+                        message: "Tiket ini sudah menyelesaikan permainan dan tidak bisa digunakan kembali."
                     }));
                     return;
                 }
 
-                let ticketId = scannedQr;
-                let guestName = null;
-                let ticketType = null;
-                let successMessage = "Tiket valid, selamat gacha!";
-
-                // ========================================
-                // VALIDASI SCAN VIA API VENDOR v1.0
-                // ========================================
-                console.log(`🌐 [WS] Meminta validasi online ke API Vendor...`);
-                const vendorRes = await validateTicketWithVendor(scannedQr, machineId);
-
-                if (!vendorRes.success || !vendorRes.valid) {
-                    const reason = vendorRes.reason || "INVALID_TICKET";
-                    const msg = vendorRes.message || "Tiket ditolak oleh sistem vendor.";
-                    console.log(`❌ [WS] Ditolak oleh API Vendor: ${reason} - ${msg}`);
-                    ws.send(JSON.stringify({
-                        type: "scan_result",
-                        success: false,
-                        reason: reason,
-                        message: msg
-                    }));
-                    return;
-                }
-
-                // Tiket dikonfirmasi valid oleh vendor
-                ticketId = String(vendorRes.data?.ticketId || scannedQr);
-                guestName = vendorRes.data?.guestName || null;
-                ticketType = vendorRes.data?.ticketType || null;
-                if (vendorRes.message) successMessage = vendorRes.message;
-                console.log(`✅ [WS] Vendor konfirmasi VALID: TicketId=${ticketId}, Guest=${guestName || "-"}`);
-
-                // --- LANGKAH: Simpan riwayat scan ke ledger sistem kita ---
-                if (existing && existing.state === "pending" && existing.usedByMachine === machineId) {
-                    existing.usedAt = now; // mesin yang sama mengulang sesi tiket yang belum selesai
+                if (existing && existing.state === "retry_allowed" && existing.attemptCount >= existing.maxAttempts) {
+                    existing.state = "used";
                     saveLedger(ledger);
-                    console.log(`🔁 [WS] QR ${scannedQr} di-claim ULANG oleh ${machineId} (sesi belum selesai).`);
+                    ws.send(JSON.stringify({
+                        type: "scan_result", success: false, reason: "ATTEMPTS_EXHAUSTED",
+                        message: "Kesempatan bermain tiket ini sudah habis."
+                    }));
+                    return;
+                }
+
+                let vendorRes;
+                scansInProgress.add(scannedQr);
+                try {
+                    console.log("🌐 [WS] Meminta validasi online ke API Vendor...");
+                    vendorRes = await validateTicketWithVendor(scannedQr, machineId);
+                } catch (err) {
+                    console.error(`❌ [WS] Gagal menghubungi Vendor API: ${err.message}`);
+                    ws.send(JSON.stringify({
+                        type: "scan_result", success: false, reason: "VENDOR_UNAVAILABLE",
+                        message: "Server validasi tiket sedang tidak tersedia. Silakan coba lagi."
+                    }));
+                    return;
+                } finally {
+                    scansInProgress.delete(scannedQr);
+                }
+
+                if (!vendorRes || !vendorRes.success || !vendorRes.valid) {
+                    const reason = vendorRes?.reason || "INVALID_TICKET";
+                    const msg = vendorRes?.message || "Tiket ditolak oleh sistem vendor.";
+                    ws.send(JSON.stringify({ type: "scan_result", success: false, reason, message: msg }));
+                    return;
+                }
+
+                const ticketId = String(vendorRes.data?.ticketId || scannedQr);
+                const guestName = vendorRes.data?.guestName || existing?.guestName || null;
+                const ticketType = vendorRes.data?.ticketType || existing?.ticketType || null;
+                const successMessage = vendorRes.message || "Tiket valid, selamat gacha!";
+
+                if (existing) {
+                    existing.ticketId = ticketId;
+                    existing.guestName = guestName;
+                    existing.ticketType = ticketType;
+                    existing.scanMode = SCAN_MODE;
+                    existing.state = "pending";
+                    existing.usedAt = now;
+                    existing.usedByMachine = machineId;
+                    saveLedger(ledger);
+                    console.log(`🔁 [WS] QR ${scannedQr} diaktifkan kembali. Percobaan ${existing.attemptCount + 1}/${existing.maxAttempts}.`);
                 } else {
-                    ledger.push({
-                        qrCode: scannedQr,
-                        ticketId: ticketId,
-                        guestName: guestName,
-                        ticketType: ticketType,
-                        scanMode: SCAN_MODE,
-                        state: "pending",
-                        usedAt: now,
-                        usedByMachine: machineId
+                    existing = ensureAttemptData({
+                        qrCode: scannedQr, ticketId, guestName, ticketType,
+                        scanMode: SCAN_MODE, state: "pending", usedAt: now,
+                        usedByMachine: machineId, attemptCount: 0,
+                        maxAttempts: MAX_GAME_ATTEMPTS, attempts: []
                     });
+                    ledger.push(existing);
                     saveLedger(ledger);
-                    console.log(`💾 [LEDGER SISTEM] Scan tersimpan di sistem lokal! Tiket: ${ticketId}, Mode: ${SCAN_MODE}`);
                 }
 
-                // Kirim sukses ke mesin yang scan
                 ws.send(JSON.stringify({
-                    type: "scan_result",
-                    success: true,
-                    reason: "VALID",
-                    message: successMessage,
-                    ticketId: ticketId,
-                    guestName: guestName,
-                    usedAt: now
+                    type: "scan_result", success: true, reason: "VALID",
+                    message: successMessage, ticketId, guestName, usedAt: now,
+                    attemptCount: existing.attemptCount,
+                    maxAttempts: existing.maxAttempts,
+                    attemptsRemaining: Math.max(0, existing.maxAttempts - existing.attemptCount)
                 }));
 
-                // Broadcast ke semua mesin (sinkron status claim/pending)
                 broadcast({
-                    type: "ticket_claimed",
-                    qrCode: scannedQr,
-                    ticketId: ticketId,
-                    machineId: machineId,
-                    usedAt: now
+                    type: "ticket_claimed", qrCode: scannedQr, ticketId,
+                    machineId, usedAt: now,
+                    attemptCount: existing.attemptCount,
+                    maxAttempts: existing.maxAttempts,
+                    attemptsRemaining: Math.max(0, existing.maxAttempts - existing.attemptCount)
                 });
             }
 
-            // ----------------------------------------
-            // EVENT: Mesin Unity memberitahu game SELESAI
-            // → baru saat inilah tiket dikunci permanen (state = used)
-            // ----------------------------------------
             else if (data.type === "game_finish") {
-                const scannedQr = data.qrCode;
-                const machineId = data.machineId;
+                const scannedQr = String(data.qrCode || "").trim();
+                const machineId = String(data.machineId || "");
                 const now = getTimestamp();
                 ws.machineId = machineId;
 
@@ -245,56 +240,103 @@ wss.on("connection", (ws) => {
                     console.log(`⚠️ [WS] game_finish ${scannedQr} — tidak ditemukan di ledger. Diabaikan.`);
                     return;
                 }
-                if (entry.state === "used") {
-                    console.log(`ℹ️ [WS] game_finish ${scannedQr} — sudah berstatus used sebelumnya.`);
+
+                ensureAttemptData(entry);
+
+                if (entry.state !== "pending") {
+                    console.log(`ℹ️ [WS] game_finish ${scannedQr} ditolak karena status: ${entry.state}.`);
                     return;
                 }
+
                 if (entry.usedByMachine !== machineId) {
-                    console.log(`⚠️ [WS] game_finish ${scannedQr} dari ${machineId}, tapi pemegangnya ${entry.usedByMachine}.`);
+                    console.log(`⚠️ [WS] game_finish ${scannedQr} dari ${machineId}, pemegangnya ${entry.usedByMachine}.`);
                     return;
                 }
 
-                // --- Hasil quiz dari Unity (GameManagerGatcha totalScore = koin) ---
-                const score = Number.isFinite(Number(data.score)) ? Number(data.score) : 0;
-                const maxScore = Number.isFinite(Number(data.maxScore)) ? Number(data.maxScore) : 0;
-                const pct = maxScore > 0 ? (score / maxScore * 100) : 0;
-                const serverWin = pct >= WIN_MIN_PERCENTAGE;
-                const clientWin = data.isWin === true || data.isWin === 1 || data.isWin === "true";
-                const finalWin = (maxScore > 0) ? (serverWin && clientWin) : clientWin;
-                const prizeTier = finalWin ? (String(data.prizeTier || "").trim() || WIN_PRIZE_DEFAULT) : "";
+                // Server menghitung hasil dari skor; nilai isWin dari Unity tidak dipercaya.
+                const score = Number(data.score);
+                const maxScore = Number(data.maxScore);
 
-                entry.state = "used";
+                if (!Number.isFinite(score) || !Number.isFinite(maxScore) ||
+                    maxScore <= 0 || score < 0 || score > maxScore) {
+                    ws.send(JSON.stringify({
+                        type: "game_finish_result", success: false,
+                        reason: "INVALID_SCORE",
+                        message: "Data skor tidak valid. Hasil permainan tidak disimpan."
+                    }));
+                    console.log(`❌ [WS] Skor tidak valid untuk ${scannedQr}: ${data.score}/${data.maxScore}`);
+                    return;
+                }
+
+                const pct = (score / maxScore) * 100;
+                const finalWin = pct >= WIN_MIN_PERCENTAGE;
+                const prizeTier = finalWin
+                    ? (String(data.prizeTier || "").trim() || WIN_PRIZE_DEFAULT)
+                    : "";
+
+                entry.attemptCount += 1;
+                const attemptRecord = {
+                    attempt: entry.attemptCount,
+                    finishedAt: now,
+                    machineId,
+                    score,
+                    maxScore,
+                    percentage: Number(pct.toFixed(2)),
+                    isWin: finalWin,
+                    prizeTier
+                };
+                entry.attempts.push(attemptRecord);
+
                 entry.finishedAt = now;
                 entry.score = score;
                 entry.maxScore = maxScore;
                 entry.isWin = finalWin;
                 entry.prizeTier = prizeTier;
+                entry.attemptsRemaining = Math.max(0, entry.maxAttempts - entry.attemptCount);
+
+                const attemptsExhausted = entry.attemptCount >= entry.maxAttempts;
+                const isFinal = finalWin || attemptsExhausted;
+                entry.state = isFinal ? "used" : "retry_allowed";
                 entry.dispenseStatus = finalWin ? "pending_dispense" : "skipped";
-                saveLedger(ledger);
 
-                console.log(`🎉 [WS] [${now}] Game ${scannedQr} (tiket ${entry.ticketId}) SELESAI di ${machineId} skor ${score}/${maxScore} (${pct.toFixed(0)}%) → ${finalWin ? "MENANG 🏆" : "kalah"} → status lokal: used.`);
-
-                // Jika mode VENDOR_API, kabari vendor bahwa game selesai untuk potong kuota
-                if (SCAN_MODE === "VENDOR_API") {
-                    claimTicketWithVendor(scannedQr, machineId, score, finalWin);
+                if (isFinal) {
+                    entry.completedAt = now;
+                } else {
+                    entry.usedByMachine = null;
                 }
 
-                broadcast({
+                saveLedger(ledger);
+
+                const outcome = finalWin ? "MENANG 🏆"
+                    : attemptsExhausted ? "KALAH - KESEMPATAN HABIS"
+                        : "KALAH - BOLEH COBA LAGI";
+
+                console.log(
+                    `🎮 [WS] [${now}] QR ${scannedQr} percobaan ${entry.attemptCount}/${entry.maxAttempts}, ` +
+                    `skor ${score}/${maxScore} (${pct.toFixed(0)}%) → ${outcome} → ${entry.state}.`
+                );
+
+                const resultPayload = {
                     type: "ticket_finished",
                     qrCode: scannedQr,
                     ticketId: entry.ticketId,
-                    machineId: machineId,
+                    machineId,
                     finishedAt: now,
                     score,
                     maxScore,
+                    percentage: Number(pct.toFixed(2)),
                     isWin: finalWin,
                     prizeTier,
                     dispenseStatus: entry.dispenseStatus,
-                    maxScore,
-                    isWin: finalWin,
-                    prizeTier,
-                    dispenseStatus: entry.dispenseStatus
-                });
+                    state: entry.state,
+                    attemptCount: entry.attemptCount,
+                    maxAttempts: entry.maxAttempts,
+                    attemptsRemaining: entry.attemptsRemaining,
+                    canRetry: entry.state === "retry_allowed"
+                };
+
+                ws.send(JSON.stringify({ type: "game_finish_result", success: true, ...resultPayload }));
+                broadcast(resultPayload);
             }
 
         } catch (err) {
@@ -309,17 +351,33 @@ wss.on("connection", (ws) => {
         // RILIS tiket "pending" milik mesin yang terputus,
         // supaya tiket tidak terbakar apabila game belum selesai.
         const mid = ws.machineId;
-        if (mid) {
+        const anotherSocketForMachine = mid && [...wss.clients].some(
+            client => client !== ws &&
+                client.readyState === WebSocket.OPEN &&
+                client.machineId === mid
+        );
+
+        if (mid && !anotherSocketForMachine) {
             const ledger = loadLedger();
             let released = 0;
             const remaining = [];
             for (const e of ledger) {
-                if (e.state === "pending" && e.usedByMachine === mid) released++;
-                else remaining.push(e);
+                if (e.state === "pending" && e.usedByMachine === mid) {
+                    released++;
+                    ensureAttemptData(e);
+                    if (e.attemptCount > 0) {
+                        e.state = "retry_allowed";
+                        e.usedByMachine = null;
+                        remaining.push(e);
+                    }
+                    // Reservation tanpa attempt selesai dihapus agar dapat scan ulang dari awal.
+                } else {
+                    remaining.push(e);
+                }
             }
             if (released > 0) {
                 saveLedger(remaining);
-                console.log(`♻️ [WS] Mesin ${mid} terputus → ${released} tiket pending dilepas kembali (bisa discan ulang).`);
+                console.log(`♻️ [WS] Mesin ${mid} terputus → ${released} tiket pending dilepas tanpa menghapus histori attempt.`);
                 broadcast({
                     type: "tickets_released",
                     count: released,
@@ -343,7 +401,10 @@ app.get("/api/ledger/:qrCode", (req, res) => {
     const qrCode = req.params.qrCode;
     const ledger = loadLedger();
     const entry = ledger.find(e => e.qrCode === qrCode);
-    const status = entry ? (entry.state === "used" ? "USED" : "PENDING") : "NOT_IN_LEDGER";
+    const status = !entry ? "NOT_IN_LEDGER"
+        : entry.state === "used" ? "USED"
+            : entry.state === "retry_allowed" ? "RETRY_ALLOWED"
+                : "PENDING";
 
     res.json({
         success: true,
@@ -361,7 +422,14 @@ app.get("/api/release/:qrCode", (req, res) => {
     if (idx === -1) {
         return res.json({ success: false, message: "Tiket tidak ditemukan atau bukan berstatus pending." });
     }
-    const [entry] = ledger.splice(idx, 1);
+    const entry = ledger[idx];
+    ensureAttemptData(entry);
+    if (entry.attemptCount > 0) {
+        entry.state = "retry_allowed";
+        entry.usedByMachine = null;
+    } else {
+        ledger.splice(idx, 1);
+    }
     saveLedger(ledger);
     console.log(`♻️ [API] Tiket ${qrCode} dilepas manual.`);
     res.json({ success: true, message: "Tiket dilepas dan bisa discan ulang.", entry });
@@ -376,7 +444,8 @@ app.get("/api/config", (req, res) => {
     res.json({
         success: true,
         winMinPercentage: WIN_MIN_PERCENTAGE,
-        winPrizeDefault: WIN_PRIZE_DEFAULT
+        winPrizeDefault: WIN_PRIZE_DEFAULT,
+        maxGameAttempts: MAX_GAME_ATTEMPTS
     });
 });
 
@@ -396,6 +465,10 @@ function toResultRow(e) {
         isWin: e.isWin === true,
         prizeTier: e.prizeTier || "",
         dispenseStatus: e.dispenseStatus || (e.isWin ? "pending_dispense" : "skipped"),
+        attemptCount: e.attemptCount ?? 1,
+        maxAttempts: e.maxAttempts ?? MAX_GAME_ATTEMPTS,
+        attemptsRemaining: Math.max(0, (e.maxAttempts ?? MAX_GAME_ATTEMPTS) - (e.attemptCount ?? 1)),
+        attempts: Array.isArray(e.attempts) ? e.attempts : [],
         idempotencyKey: e.qrCode
     };
 }
@@ -471,10 +544,15 @@ app.get("/", (req, res) => {
     const totalMachines = wss.clients.size;
 
     let rows = ledger.map(e => {
-        const scoreTxt = e.state === "used" ? `${e.score ?? 0}/${e.maxScore ?? 0}` : "-";
-        const winTxt = e.state !== "used" ? "-" : (e.isWin ? `🏆 MENANG${e.prizeTier ? ` (${e.prizeTier})` : ""}` : "kalah");
+        const isFinishedAttempt = e.state === "used" || e.state === "retry_allowed";
+        const scoreTxt = isFinishedAttempt ? `${e.score ?? 0}/${e.maxScore ?? 0}` : "-";
+        const winTxt = !isFinishedAttempt ? "-" : (e.isWin
+            ? `🏆 MENANG${e.prizeTier ? ` (${e.prizeTier})` : ""}`
+            : (e.state === "retry_allowed" ? "KALAH - bisa ulang" : "KALAH"));
+        const attemptTxt = `${e.attemptCount ?? 0}/${e.maxAttempts ?? MAX_GAME_ATTEMPTS}`;
         const disp = e.dispenseStatus || (e.isWin ? "pending_dispense" : "-");
         const dispCls = disp === "dispensed" ? "b-used" : (disp === "pending_dispense" ? "b-pending" : "b-skip");
+        const stateLabel = e.state === "used" ? "Selesai" : e.state === "retry_allowed" ? "Bisa Ulang" : "Diproses";
         const guest = e.guestName ? `<b>${e.guestName}</b>${e.ticketType ? ` <small>(${e.ticketType})</small>` : ""}` : "-";
         const modeBadge = e.scanMode === "VENDOR_API" ? `<span style="background:#17a2b8; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">API</span>` : `<span style="background:#6c757d; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px;">OFFLINE</span>`;
 
@@ -484,7 +562,8 @@ app.get("/", (req, res) => {
             <td>${e.ticketId}</td>
             <td>${guest}</td>
             <td>${modeBadge}</td>
-            <td><span class="badge ${e.state === "used" ? "b-used" : "b-pending"}">${e.state === "used" ? "Selesai" : "Diproses"}</span></td>
+            <td><span class="badge ${e.state === "used" ? "b-used" : e.state === "retry_allowed" ? "b-skip" : "b-pending"}">${stateLabel}</span></td>
+            <td>${attemptTxt}</td>
             <td>${scoreTxt}</td>
             <td>${winTxt}</td>
             <td><span class="badge ${dispCls}">${disp}</span></td>
@@ -549,12 +628,12 @@ app.get("/", (req, res) => {
 
         <table>
             <tr>
-                <th>QR Code</th><th>Ticket ID</th><th>Pengunjung</th><th>Mode</th><th>Status</th><th>Koin</th><th>Hasil</th><th>Dispense</th><th>Waktu Scan</th><th>Mesin</th>
+                <th>QR Code</th><th>Ticket ID</th><th>Pengunjung</th><th>Mode</th><th>Status</th><th>Percobaan</th><th>Koin</th><th>Hasil</th><th>Dispense</th><th>Waktu Scan</th><th>Mesin</th>
             </tr>
-            ${rows || '<tr><td colspan="10" class="empty">Belum ada QR yang discan di sistem ini</td></tr>'}
+            ${rows || '<tr><td colspan="11" class="empty">Belum ada QR yang discan di sistem ini</td></tr>'}
         </table>
 
-        <p class="note">🔄 Auto-refresh tiap 10 detik. Target Vendor API: <b>${VENDOR_BASE_URL}</b></p>
+        <p class="note">🔄 Auto-refresh tiap 10 detik. Maksimal kesempatan: <b>${MAX_GAME_ATTEMPTS}x</b>. Target Vendor API: <b>${VENDOR_BASE_URL}</b></p>
     </body>
     </html>
     `);
@@ -568,7 +647,7 @@ server.listen(PORT, async () => {
     console.log(`Dashboard       : http://localhost:${PORT}`);
     console.log(`API Ledger      : http://localhost:${PORT}/api/ledger`);
     console.log(`API Results     : http://localhost:${PORT}/api/results (untuk platform dispenser)`);
-    console.log(`API Config      : http://localhost:${PORT}/api/config (threshold menang ${WIN_MIN_PERCENTAGE}%)`);
+    console.log(`API Config      : http://localhost:${PORT}/api/config (threshold menang ${WIN_MIN_PERCENTAGE}%, max attempt ${MAX_GAME_ATTEMPTS}x)`);
     console.log(`========================================\n`);
 
     // Inisialisasi Device ke Vendor API
