@@ -2,64 +2,64 @@ const bcrypt = require('bcryptjs');
 const prisma = require('./src/config/database'); // Sesuaikan path ini dengan project-mu
 
 const defaultQuestions = [
-    // --- IMMERSIVE ROOM ---
+    // --- Immersive Room ---
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Siapa nama tokoh karakter yang melakukan perjalanan waktu ke masa lalu, dalam cerita Immersive Room?",
+        categoryName: "Immersive Room",
+        question: "Siapa nama tokoh karakter yang melakukan perjalanan waktu ke masa lalu dalam cerita Immersive Room?",
         timer: 15,
         answers: [
-            { answerText: "DELE", isCorrect: true },
-            { answerText: "REGI", isCorrect: false }
+            { answerText: "Dele", isCorrect: true },
+            { answerText: "Regi", isCorrect: false }
         ]
     },
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Siapa nama tokoh karakter yang pertama membuat catatan tentang makanan tempe di abad 16, dalam cerita Immersive Room?",
+        categoryName: "Immersive Room",
+        question: "Siapa nama tokoh karakter yang pertama membuat catatan tentang makanan tempe di abad ke-16 dalam cerita Immersive Room?",
         timer: 15,
         answers: [
-            { answerText: "PANGERAN TEMBAYAT", isCorrect: false },
-            { answerText: "MAS CEMBOLANG", isCorrect: true }
+            { answerText: "Pangeran Tembayat", isCorrect: false },
+            { answerText: "Mas Cembolang", isCorrect: true }
         ]
     },
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Kapan tempe mulai berlayar masuk ke benua eropa, dalam cerita Immersive Room?",
+        categoryName: "Immersive Room",
+        question: "Kapan tempe mulai berlayar masuk ke benua Eropa dalam cerita Immersive Room?",
         timer: 15,
         answers: [
-            { answerText: "ABAD 18", isCorrect: false },
-            { answerText: "ABAD 21", isCorrect: true } // Sesuaikan jika jawaban benarnya Abad 18
+            { answerText: "Abad ke-18", isCorrect: false },
+            { answerText: "Abad ke-21", isCorrect: true } // Sesuaikan jika jawaban benarnya Abad ke-18
         ]
     },
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Dalam cerita di Immersive Room, di sebutkan sejarah catatan pertama yang menyebutkan tentang Tempe, catatan ini ada dalam tulisan bernama?",
+        categoryName: "Immersive Room",
+        question: "Dalam cerita di Immersive Room, disebutkan sejarah catatan pertama yang menyebutkan tentang tempe. Catatan ini ada dalam tulisan bernama?",
         timer: 15,
         answers: [
-            { answerText: "SERAT RANTINI", isCorrect: false },
-            { answerText: "SERAT CENTHINI", isCorrect: true }
+            { answerText: "Serat Rantini", isCorrect: false },
+            { answerText: "Serat Centhini", isCorrect: true }
         ]
     },
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Dalam cerita di Immersive Room, Karakter Dele di bantu oleh 2 temannya, yang bernama REGI dan…?",
+        categoryName: "Immersive Room",
+        question: "Dalam cerita di Immersive Room, karakter Dele dibantu oleh 2 temannya, yaitu Regi dan...?",
         timer: 15,
         answers: [
-            { answerText: "DAWUN", isCorrect: true },
-            { answerText: "PIPIK", isCorrect: false }
+            { answerText: "Dawun", isCorrect: true },
+            { answerText: "Pipik", isCorrect: false }
         ]
     },
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Dalam cerita di Immersive Room, dijelaskan bahwa dalam kosa kata bahasa jawa kuno, terdapat istilah awal kata tempe, yaitu?",
+        categoryName: "Immersive Room",
+        question: "Dalam cerita di Immersive Room, dijelaskan bahwa dalam kosakata bahasa Jawa kuno terdapat istilah awal kata tempe, yaitu?",
         timer: 15,
         answers: [
-            { answerText: "TAMPU", isCorrect: false },
-            { answerText: "TUMPI", isCorrect: true }
+            { answerText: "Tampu", isCorrect: false },
+            { answerText: "Tumpi", isCorrect: true }
         ]
     },
     {
-        categoryName: "IMMERSIVE ROOM",
-        question: "Dalam cerita di Immersive Room, dijelaskan mengenai catatan awal berdirinya pabrik tempe di Belanda, yaitu di tahun?",
+        categoryName: "Immersive Room",
+        question: "Dalam cerita di Immersive Room, dijelaskan mengenai catatan awal berdirinya pabrik tempe di Belanda, yaitu pada tahun?",
         timer: 15,
         answers: [
             { answerText: "1986", isCorrect: false },
@@ -67,175 +67,175 @@ const defaultQuestions = [
         ]
     },
 
-    // --- TEMPE WARRIOR ---
+    // --- Tempe Warrior ---
     {
-        categoryName: "TEMPE WARRIOR",
-        question: "Di area tempe warrior, ada penayangan video tentang seorang pembuat tempe benguk yang berasal dari Kulon Progo, siapakah dia?",
+        categoryName: "Tempe Warrior",
+        question: "Di area Tempe Warrior, ada penayangan video tentang seorang pembuat tempe benguk yang berasal dari Kulon Progo, siapakah dia?",
         timer: 15,
         answers: [
-            { answerText: "BU ROHAYAH", isCorrect: true },
-            { answerText: "BU PAINAH", isCorrect: false }
+            { answerText: "Bu Rohayah", isCorrect: true },
+            { answerText: "Bu Painah", isCorrect: false }
         ]
     },
     {
-        categoryName: "TEMPE WARRIOR",
-        question: "Di area tempe warrior, ada penayangan video tentang seorang pembuat & yang mengenalkan tempe KORO, siapakah dia?",
+        categoryName: "Tempe Warrior",
+        question: "Di area Tempe Warrior, ada penayangan video tentang seorang pembuat dan yang mengenalkan tempe koro, siapakah dia?",
         timer: 15,
         answers: [
-            { answerText: "BU TUMINAH", isCorrect: false },
-            { answerText: "BU TUGIYEM", isCorrect: true }
+            { answerText: "Bu Tuminah", isCorrect: false },
+            { answerText: "Bu Tugiyem", isCorrect: true }
         ]
     },
     {
-        categoryName: "TEMPE WARRIOR",
-        question: "Di area tempe warrior, ada penayangan video tentang pembuatan secara tradisional Tempeh Benguk, terbuat dari apakah bahan bakunya?",
+        categoryName: "Tempe Warrior",
+        question: "Di area Tempe Warrior, ada penayangan video tentang pembuatan tempe benguk secara tradisional. Terbuat dari apakah bahan bakunya?",
         timer: 15,
         answers: [
-            { answerText: "KACANG MEDE", isCorrect: false },
-            { answerText: "KACANG KORO BENGUK", isCorrect: true }
+            { answerText: "Kacang mede", isCorrect: false },
+            { answerText: "Kacang koro benguk", isCorrect: true }
         ]
     },
 
-    // --- DIGITAL INTERACTIVE ANIMATION - PROSES PEMBUATAN TEMPE ---
+    // --- Digital Interactive Animation - Proses Pembuatan Tempe ---
     {
-        categoryName: "DIGITAL INTERACTIVE ANIMATION - PROSES PEMBUATAN TEMPE",
-        question: "Langkah awal dalam proses pembuatan tempe tradisional adalah membersihkan kotoran yang menempel pada biji kedelai., tahap ini disebut dengan?",
+        categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        question: "Langkah awal dalam proses pembuatan tempe tradisional adalah membersihkan kotoran yang menempel pada biji kedelai. Tahap ini disebut dengan?",
         timer: 15,
         answers: [
-            { answerText: "MENCUCI KEDELAI", isCorrect: true },
-            { answerText: "MENGGILING KEDELAI", isCorrect: false }
+            { answerText: "Mencuci kedelai", isCorrect: true },
+            { answerText: "Menggiling kedelai", isCorrect: false }
         ]
     },
     {
-        categoryName: "DIGITAL INTERACTIVE ANIMATION - PROSES PEMBUATAN TEMPE",
+        categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
         question: "Setelah kedelai bersih dan digiling, langkah krusial untuk memulai proses fermentasi agar kedelai berubah menjadi tempe adalah?",
         timer: 15,
         answers: [
-            { answerText: "MEMBUNGKUS KEDELAI DENGAN DAUN", isCorrect: false },
-            { answerText: "PENAMBAHAN RAGI", isCorrect: true }
+            { answerText: "Membungkus kedelai dengan daun", isCorrect: false },
+            { answerText: "Penambahan ragi", isCorrect: true }
         ]
     },
     {
-        categoryName: "DIGITAL INTERACTIVE ANIMATION - PROSES PEMBUATAN TEMPE",
+        categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
         question: "Pada metode pembuatan tradisional, bahan alami yang digunakan sebagai wadah untuk membungkus kedelai selama masa fermentasi adalah?",
         timer: 15,
         answers: [
-            { answerText: "DAUN (SEPERTI DAUN PISANG ATAU DAUN JATI)", isCorrect: true },
-            { answerText: "PLASTIK KEDAP UDARA", isCorrect: false }
+            { answerText: "Daun (seperti daun pisang atau daun jati)", isCorrect: true },
+            { answerText: "Plastik kedap udara", isCorrect: false }
         ]
     },
 
-    // --- WORLD OF SOYBEAN ---
+    // --- World of Soybean ---
     {
-        categoryName: "WORLD OF SOYBEAN",
-        question: "Varietas unggul kedelai yang paling banyak di gunakan petani di Indonesia adalah ?",
+        categoryName: "World of Soybean",
+        question: "Varietas unggul kedelai yang paling banyak digunakan petani di Indonesia adalah?",
         timer: 15,
         answers: [
-            { answerText: "ANJASMORO", isCorrect: true },
-            { answerText: "GROBOGAN", isCorrect: false }
+            { answerText: "Anjasmoro", isCorrect: true },
+            { answerText: "Grobogan", isCorrect: false }
         ]
     },
     {
-        categoryName: "WORLD OF SOYBEAN",
-        question: "Varietas unggul kedelai MAHAMERU di Indoonesia, paling banyak ditemukan di propinsi?",
+        categoryName: "World of Soybean",
+        question: "Varietas unggul kedelai Mahameru di Indonesia paling banyak ditemukan di provinsi?",
         timer: 15,
         answers: [
-            { answerText: "ACEH", isCorrect: true },
-            { answerText: "SULAWESI SELATAN", isCorrect: false }
+            { answerText: "Aceh", isCorrect: true },
+            { answerText: "Sulawesi Selatan", isCorrect: false }
         ]
     },
     {
-        categoryName: "WORLD OF SOYBEAN",
-        question: "Jumlah petani kedelai di Indonesia, saat ini estimasi jumlahnya mencpai berapa ?",
+        categoryName: "World of Soybean",
+        question: "Jumlah petani kedelai di Indonesia saat ini estimasi jumlahnya mencapai berapa?",
         timer: 15,
         answers: [
-            { answerText: "15 JUTA PETANI", isCorrect: false },
-            { answerText: "15 RIBU PETANI", isCorrect: true }
+            { answerText: "15 juta petani", isCorrect: false },
+            { answerText: "15 ribu petani", isCorrect: true }
         ]
     },
     {
-        categoryName: "WORLD OF SOYBEAN",
-        question: "Di area world of soybean, ada penjelaskan informasi tentang?",
+        categoryName: "World of Soybean",
+        question: "Di area World of Soybean, ada penjelasan informasi tentang?",
         timer: 15,
         answers: [
-            { answerText: "PROFIL PEMBUAT TEMPE", isCorrect: false },
-            { answerText: "SEJARAH KEDELAI", isCorrect: true }
+            { answerText: "Profil pembuat tempe", isCorrect: false },
+            { answerText: "Sejarah kedelai", isCorrect: true }
         ]
     },
     {
-        categoryName: "WORLD OF SOYBEAN",
-        question: "Varietas unggul kedelai WILIS di Indoonesia, paling banyak ditemukan di propinsi?",
+        categoryName: "World of Soybean",
+        question: "Varietas unggul kedelai Wilis di Indonesia paling banyak ditemukan di provinsi?",
         timer: 15,
         answers: [
-            { answerText: "JAWA TIMUR", isCorrect: true },
-            { answerText: "JAWA BARAT", isCorrect: false }
-        ]
-    },
-
-    // --- RAGI & MYCELIUM ---
-    {
-        categoryName: "RAGI & MYCELIUM",
-        question: "Dalam proses pembuatan tempe, kedelai akan di fermetasi dengan cara ditaburkan RAGI yang bernama latin?",
-        timer: 15,
-        answers: [
-            { answerText: "RHIZOPUS OLIGOSPORUS", isCorrect: true },
-            { answerText: "AGARICUS BISPORUS", isCorrect: false }
-        ]
-    },
-    {
-        categoryName: "RAGI & MYCELIUM",
-        question: "Dalam proses fermentasi tempe, terjadi proses pengiktan dari jamur yang membuat kedelai menjadi lebih padat, bentukya seperti benang putih, istilah ilmiahnya adalah?",
-        timer: 15,
-        answers: [
-            { answerText: "EKOLOGI", isCorrect: false },
-            { answerText: "MISELIUM", isCorrect: true }
+            { answerText: "Jawa Timur", isCorrect: true },
+            { answerText: "Jawa Barat", isCorrect: false }
         ]
     },
 
-    // --- TEMPE PRODUCTION ---
+    // --- Ragi & Mycelium ---
     {
-        categoryName: "TEMPE PRODUCTION",
-        question: "Dalam proses produksi tempe, Apa tahap paling awal yang harus dilakukan terhadap kacang kedelai mentah untuk melunakkan teksturnya?",
+        categoryName: "Ragi & Mycelium",
+        question: "Dalam proses pembuatan tempe, kedelai akan difermentasi dengan cara ditaburkan ragi yang bernama Latin?",
         timer: 15,
         answers: [
-            { answerText: "MENCUCI DAN MERENDAM KACANG KEDELAI", isCorrect: true },
-            { answerText: "MEMBUNGKUS KACANG KEDELAI DENGAN DAUN PISANG", isCorrect: false }
+            { answerText: "Rhizopus oligosporus", isCorrect: true },
+            { answerText: "Agaricus bisporus", isCorrect: false }
         ]
     },
     {
-        categoryName: "TEMPE PRODUCTION",
-        question: "Dalam proses produksi tempe, Setelah kacang kedelai dimasak atau direbus, tindakan apa yang perlu dilakukan agar jamur tempe dapat tumbuh merata pada biji kedelai?",
+        categoryName: "Ragi & Mycelium",
+        question: "Dalam proses fermentasi tempe, terjadi proses pengikatan dari jamur yang membuat kedelai menjadi lebih padat dan bentuknya seperti benang putih. Istilah ilmiahnya adalah?",
         timer: 15,
         answers: [
-            { answerText: "MENAMBAHKAN GARAM DAPUR DALAM JUMLAH BANYAK", isCorrect: false },
-            { answerText: "MENGUPAS KULIT ARI KACANG KEDELAI", isCorrect: true }
+            { answerText: "Ekologi", isCorrect: false },
+            { answerText: "Miselium", isCorrect: true }
+        ]
+    },
+
+    // --- Tempe Production ---
+    {
+        categoryName: "Tempe Production",
+        question: "Dalam proses produksi tempe, apa tahap paling awal yang harus dilakukan terhadap kacang kedelai mentah untuk melunakkan teksturnya?",
+        timer: 15,
+        answers: [
+            { answerText: "Mencuci dan merendam kacang kedelai", isCorrect: true },
+            { answerText: "Membungkus kacang kedelai dengan daun pisang", isCorrect: false }
         ]
     },
     {
-        categoryName: "TEMPE PRODUCTION",
-        question: "Dalam proses produksi tempe, Mengapa kacang kedelai yang sudah matang harus dipastikan kering (tiris) dari air sebelum diberi ragi?",
+        categoryName: "Tempe Production",
+        question: "Dalam proses produksi tempe, setelah kacang kedelai dimasak atau direbus, tindakan apa yang perlu dilakukan agar jamur tempe dapat tumbuh merata pada biji kedelai?",
         timer: 15,
         answers: [
-            { answerText: "AGAR TEKSTUR TEMPE MENJADI KERAS SEPERTI BATU SAAT DIGORENG", isCorrect: false },
-            { answerText: "AGAR RAGI DAPAT BEKERJA OPTIMAL DAN MENGHINDARI PEMBUSUKAN", isCorrect: true }
+            { answerText: "Menambahkan garam dapur dalam jumlah banyak", isCorrect: false },
+            { answerText: "Mengupas kulit ari kacang kedelai", isCorrect: true }
         ]
     },
     {
-        categoryName: "TEMPE PRODUCTION",
-        question: "Dalam proses produksi tempe, Kapan waktu yang paling tepat untuk mencampurkan ragi ke dalam kacang kedelai?",
+        categoryName: "Tempe Production",
+        question: "Dalam proses produksi tempe, mengapa kacang kedelai yang sudah matang harus dipastikan kering (tiris) dari air sebelum diberi ragi?",
         timer: 15,
         answers: [
-            { answerText: "SAAT KEDELAI SUDAH DALAM KONDISI KERING DAN SUHU SUDAH MENDINGIN", isCorrect: true },
-            { answerText: "SAAT KEDELAI MASIH SANGAT PANAS MENDIDIH DI DALAM PANCI", isCorrect: false }
+            { answerText: "Agar tekstur tempe menjadi keras seperti batu saat digoreng", isCorrect: false },
+            { answerText: "Agar ragi dapat bekerja optimal dan menghindari pembusukan", isCorrect: true }
         ]
     },
     {
-        categoryName: "TEMPE PRODUCTION",
+        categoryName: "Tempe Production",
+        question: "Dalam proses produksi tempe, kapan waktu yang paling tepat untuk mencampurkan ragi ke dalam kacang kedelai?",
+        timer: 15,
+        answers: [
+            { answerText: "Saat kedelai sudah dalam kondisi kering dan suhu sudah mendingin", isCorrect: true },
+            { answerText: "Saat kedelai masih sangat panas mendidih di dalam panci", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Tempe Production",
         question: "Dalam proses produksi tempe tradisional, bahan apa yang paling umum digunakan untuk membungkus tempe?",
         timer: 15,
         answers: [
-            { answerText: "DAUN PEPAYA", isCorrect: false },
-            { answerText: "DAUN PISANG", isCorrect: true }
+            { answerText: "Daun pepaya", isCorrect: false },
+            { answerText: "Daun pisang", isCorrect: true }
         ]
     }
 ];
