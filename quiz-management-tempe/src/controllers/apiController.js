@@ -1,10 +1,11 @@
 const prisma = require('../config/database');
 
-// Helper function untuk mengelompokkan & memilih 1 soal acak per kategori
-const getRandomQuestionsPerCategory = (questions) => {
+const getBalancedRandomQuestions = (questions, limit = 10) => {
     const grouped = {};
+    const selectedQuestions = [];
+    const selectedIds = new Set();
 
-    // 1. Kelompokkan soal berdasarkan categoryId / categoryName
+    // Kelompokkan soal berdasarkan categoryId
     questions.forEach(q => {
         const catKey = q.categoryId ? q.categoryId : 'uncategorized';
         if (!grouped[catKey]) {
@@ -13,15 +14,36 @@ const getRandomQuestionsPerCategory = (questions) => {
         grouped[catKey].push(q);
     });
 
-    // 2. Pilih 1 soal acak dari masing-masing kategori
-    const selectedQuestions = [];
+    // Ambil 1 soal acak dari masing-masing kategori (menjamin semua kategori pasti terwakili)
     for (const catKey in grouped) {
         const categoryQuestions = grouped[catKey];
         const randomIndex = Math.floor(Math.random() * categoryQuestions.length);
-        selectedQuestions.push(categoryQuestions[randomIndex]);
+        const picked = categoryQuestions[randomIndex];
+
+        selectedQuestions.push(picked);
+        selectedIds.add(picked.id);
     }
 
-    return selectedQuestions;
+    // Kumpulkan sisa soal yang belum terpilih, lalu acak urutannya
+    const remainingQuestions = questions.filter(q => !selectedIds.has(q.id));
+    for (let i = remainingQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remainingQuestions[i], remainingQuestions[j]] = [remainingQuestions[j], remainingQuestions[i]];
+    }
+
+    // Gabungkan soal perwakilan kategori + sisa soal acak
+    const combined = [...selectedQuestions, ...remainingQuestions];
+
+    // Potong sesuai limit (jika limit <= 0, tampilkan semua soal)
+    const finalList = (limit > 0) ? combined.slice(0, limit) : combined;
+
+    // Acak urutan akhir agar posisi kategori tersebar rata
+    for (let i = finalList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [finalList[i], finalList[j]] = [finalList[j], finalList[i]];
+    }
+
+    return finalList;
 };
 
 const getActiveQuizzes = async (req, res) => {
@@ -54,8 +76,9 @@ const getQuizForUnity = async (req, res) => {
 
         if (!quiz) return res.status(404).json({ error: 'Quiz not found or inactive' });
 
-        // Acak & ambil 1 soal per kategori
-        const randomQuestions = getRandomQuestionsPerCategory(quiz.questions);
+        // 2. PERBAIKAN PEMANGGILAN: Baca ?limit= dari URL (default 10 soal)
+        const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
+        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit);
 
         const formattedQuestions = randomQuestions.map(q => {
             const answersList = q.answers.map(a => a.answerText);
@@ -93,8 +116,9 @@ const getActiveQuizForUnity = async (req, res) => {
 
         if (!quiz) return res.status(404).json({ error: 'No active quiz found' });
 
-        // Acak & ambil 1 soal per kategori
-        const randomQuestions = getRandomQuestionsPerCategory(quiz.questions);
+        // 3. PERBAIKAN PEMANGGILAN: Baca ?limit= dari URL (default 10 soal)
+        const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
+        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit);
 
         const formattedQuestions = randomQuestions.map(q => {
             const answersList = q.answers.map(a => a.answerText);
