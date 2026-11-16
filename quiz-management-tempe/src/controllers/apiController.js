@@ -1,49 +1,80 @@
 const prisma = require('../config/database');
 
-const getBalancedRandomQuestions = (questions, limit = 10) => {
-    const grouped = {};
-    const selectedQuestions = [];
-    const selectedIds = new Set();
+const questionBags = {};
 
-    // Kelompokkan soal berdasarkan categoryId
-    questions.forEach(q => {
-        const catKey = q.categoryId ? q.categoryId : 'uncategorized';
-        if (!grouped[catKey]) {
-            grouped[catKey] = [];
+const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') => {
+    if (limit <= 0 || limit >= questions.length) {
+        const all = [...questions];
+        for (let i = all.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [all[i], all[j]] = [all[j], all[i]];
         }
-        grouped[catKey].push(q);
-    });
-
-    // Ambil 1 soal acak dari masing-masing kategori (menjamin semua kategori pasti terwakili)
-    for (const catKey in grouped) {
-        const categoryQuestions = grouped[catKey];
-        const randomIndex = Math.floor(Math.random() * categoryQuestions.length);
-        const picked = categoryQuestions[randomIndex];
-
-        selectedQuestions.push(picked);
-        selectedIds.add(picked.id);
+        return all;
     }
 
-    // Kumpulkan sisa soal yang belum terpilih, lalu acak urutannya
-    const remainingQuestions = questions.filter(q => !selectedIds.has(q.id));
-    for (let i = remainingQuestions.length - 1; i > 0; i--) {
+    // Inisialisasi kantong antrean jika belum ada
+    if (!questionBags[quizId]) {
+        questionBags[quizId] = [];
+    }
+
+    // Fungsi bantuan untuk mengocok 1 set soal baru (tetap jamin 1 soal per kategori di awal)
+    const createNewShuffledBatch = () => {
+        const grouped = {};
+        const priority = [];
+        const priorityIds = new Set();
+
+        questions.forEach(q => {
+            const catKey = q.categoryId ? q.categoryId : 'uncategorized';
+            if (!grouped[catKey]) grouped[catKey] = [];
+            grouped[catKey].push(q);
+        });
+
+        // Ambil 1 perwakilan acak per kategori
+        for (const catKey in grouped) {
+            const list = grouped[catKey];
+            const picked = list[Math.floor(Math.random() * list.length)];
+            priority.push(picked);
+            priorityIds.add(picked.id);
+        }
+
+        // Acak urutan perwakilan kategori
+        for (let i = priority.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [priority[i], priority[j]] = [priority[j], priority[i]];
+        }
+
+        // Acak sisa soal lainnya
+        const rest = questions.filter(q => !priorityIds.has(q.id));
+        for (let i = rest.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [rest[i], rest[j]] = [rest[j], rest[i]];
+        }
+
+        return [...priority, ...rest];
+    };
+
+    // Jika antrean di kantong kurang dari limit (10), isi ulang kantong dengan kocokan baru
+    while (questionBags[quizId].length < limit) {
+        const newBatch = createNewShuffledBatch();
+        const existingIds = new Set(questionBags[quizId].map(q => q.id));
+
+        // Masukkan soal yang belum ada di sisa antrean terlebih dahulu agar tidak dobel dalam 1 sesi
+        const nonDuplicate = newBatch.filter(q => !existingIds.has(q.id));
+        const duplicate = newBatch.filter(q => existingIds.has(q.id));
+
+        questionBags[quizId].push(...nonDuplicate, ...duplicate);
+    }
+
+    // Ambil 10 soal terdepan dari antrean
+    const selected = questionBags[quizId].splice(0, limit);
+
+    // Acak urutan akhir sebelum dikirim ke Unity
+    for (let i = selected.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [remainingQuestions[i], remainingQuestions[j]] = [remainingQuestions[j], remainingQuestions[i]];
+        [selected[i], selected[j]] = [selected[j], selected[i]];
     }
 
-    // Gabungkan soal perwakilan kategori + sisa soal acak
-    const combined = [...selectedQuestions, ...remainingQuestions];
-
-    // Potong sesuai limit (jika limit <= 0, tampilkan semua soal)
-    const finalList = (limit > 0) ? combined.slice(0, limit) : combined;
-
-    // Acak urutan akhir agar posisi kategori tersebar rata
-    for (let i = finalList.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [finalList[i], finalList[j]] = [finalList[j], finalList[i]];
-    }
-
-    return finalList;
+    return selected;
 };
 
 const getActiveQuizzes = async (req, res) => {
@@ -78,7 +109,8 @@ const getQuizForUnity = async (req, res) => {
 
         // 2. PERBAIKAN PEMANGGILAN: Baca ?limit= dari URL (default 10 soal)
         const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
-        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit);
+        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit, quiz.id);
+
 
         const formattedQuestions = randomQuestions.map(q => {
             const answersList = q.answers.map(a => a.answerText);
@@ -118,7 +150,7 @@ const getActiveQuizForUnity = async (req, res) => {
 
         // 3. PERBAIKAN PEMANGGILAN: Baca ?limit= dari URL (default 10 soal)
         const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
-        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit);
+        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit, quiz.id);
 
         const formattedQuestions = randomQuestions.map(q => {
             const answersList = q.answers.map(a => a.answerText);
