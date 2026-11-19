@@ -2,7 +2,10 @@ const prisma = require('../config/database');
 
 const questionBags = {};
 
-const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') => {
+// 1. UPDATE: Tambahkan parameter lang agar antrean soal ID dan EN terpisah
+const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default', lang = 'id') => {
+    const bagKey = `${quizId}_${lang}`;
+
     if (limit <= 0 || limit >= questions.length) {
         const all = [...questions];
         for (let i = all.length - 1; i > 0; i--) {
@@ -12,12 +15,10 @@ const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') =
         return all;
     }
 
-    // Inisialisasi kantong antrean jika belum ada
-    if (!questionBags[quizId]) {
-        questionBags[quizId] = [];
+    if (!questionBags[bagKey]) {
+        questionBags[bagKey] = [];
     }
 
-    // Fungsi bantuan untuk mengocok 1 set soal baru (tetap jamin 1 soal per kategori di awal)
     const createNewShuffledBatch = () => {
         const grouped = {};
         const priority = [];
@@ -29,7 +30,6 @@ const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') =
             grouped[catKey].push(q);
         });
 
-        // Ambil 1 perwakilan acak per kategori
         for (const catKey in grouped) {
             const list = grouped[catKey];
             const picked = list[Math.floor(Math.random() * list.length)];
@@ -37,13 +37,11 @@ const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') =
             priorityIds.add(picked.id);
         }
 
-        // Acak urutan perwakilan kategori
         for (let i = priority.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [priority[i], priority[j]] = [priority[j], priority[i]];
         }
 
-        // Acak sisa soal lainnya
         const rest = questions.filter(q => !priorityIds.has(q.id));
         for (let i = rest.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -53,22 +51,18 @@ const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') =
         return [...priority, ...rest];
     };
 
-    // Jika antrean di kantong kurang dari limit (10), isi ulang kantong dengan kocokan baru
-    while (questionBags[quizId].length < limit) {
+    while (questionBags[bagKey].length < limit) {
         const newBatch = createNewShuffledBatch();
-        const existingIds = new Set(questionBags[quizId].map(q => q.id));
+        const existingIds = new Set(questionBags[bagKey].map(q => q.id));
 
-        // Masukkan soal yang belum ada di sisa antrean terlebih dahulu agar tidak dobel dalam 1 sesi
         const nonDuplicate = newBatch.filter(q => !existingIds.has(q.id));
         const duplicate = newBatch.filter(q => existingIds.has(q.id));
 
-        questionBags[quizId].push(...nonDuplicate, ...duplicate);
+        questionBags[bagKey].push(...nonDuplicate, ...duplicate);
     }
 
-    // Ambil 10 soal terdepan dari antrean
-    const selected = questionBags[quizId].splice(0, limit);
+    const selected = questionBags[bagKey].splice(0, limit);
 
-    // Acak urutan akhir sebelum dikirim ke Unity
     for (let i = selected.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [selected[i], selected[j]] = [selected[j], selected[i]];
@@ -77,25 +71,67 @@ const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default') =
     return selected;
 };
 
+// 2. UPDATE BARU: Helper untuk memformat response sesuai bahasa (?lang=id atau ?lang=en)
+const formatQuizResponse = (quiz, req) => {
+    const lang = req.query.lang === 'en' ? 'en' : 'id';
+    const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
+    const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit, quiz.id, lang);
+
+    const formattedQuestions = randomQuestions.map(q => {
+        // PASTIKAN nama field Inggris di bawah (answerTextEn, questionEn, nameEn) sesuai dengan schema.prisma Anda
+        const answersList = q.answers.map(a =>
+            lang === 'en' && a.answerTextEn ? a.answerTextEn : a.answerText
+        );
+        const correctAnswerIndex = q.answers.findIndex(a => a.isCorrect);
+
+        let categoryName = "Uncategorized";
+        if (q.category) {
+            categoryName = lang === 'en' && q.category.nameEn ? q.category.nameEn : q.category.name;
+        }
+
+        return {
+            id: q.id,
+            categoryName,
+            question: lang === 'en' && q.questionEn ? q.questionEn : q.question,
+            image: q.image ? `${req.protocol}://${req.get('host')}${q.image}` : null,
+            timer: q.timer,
+            answers: answersList,
+            correctAnswer: correctAnswerIndex >= 0 ? correctAnswerIndex : 0
+        };
+    });
+
+    return {
+        id: quiz.id,
+        title: lang === 'en' && quiz.titleEn ? quiz.titleEn : quiz.title,
+        description: lang === 'en' && quiz.descriptionEn ? quiz.descriptionEn : quiz.description,
+        questions: formattedQuestions
+    };
+};
+
+// 3. UPDATE: Sesuaikan daftar kuis aktif dengan bahasa
 const getActiveQuizzes = async (req, res) => {
+    const lang = req.query.lang === 'en' ? 'en' : 'id';
     try {
         const quizzes = await prisma.quiz.findMany({
             where: { status: true },
-            orderBy: { createdAt: 'desc' },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                createdAt: true
-            }
+            orderBy: { createdAt: 'desc' }
         });
-        res.json(quizzes);
+
+        const formatted = quizzes.map(q => ({
+            id: q.id,
+            title: lang === 'en' && q.titleEn ? q.titleEn : q.title,
+            description: lang === 'en' && q.descriptionEn ? q.descriptionEn : q.description,
+            createdAt: q.createdAt
+        }));
+
+        res.json(formatted);
     } catch (error) {
         console.error('getActiveQuizzes error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
+// 4. UPDATE: Gunakan formatQuizResponse
 const getQuizForUnity = async (req, res) => {
     const { id } = req.params;
 
@@ -107,37 +143,14 @@ const getQuizForUnity = async (req, res) => {
 
         if (!quiz) return res.status(404).json({ error: 'Quiz not found or inactive' });
 
-        // 2. PERBAIKAN PEMANGGILAN: Baca ?limit= dari URL (default 10 soal)
-        const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
-        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit, quiz.id);
-
-
-        const formattedQuestions = randomQuestions.map(q => {
-            const answersList = q.answers.map(a => a.answerText);
-            const correctAnswerIndex = q.answers.findIndex(a => a.isCorrect);
-            return {
-                id: q.id,
-                categoryName: q.category ? q.category.name : "Uncategorized",
-                question: q.question,
-                image: q.image ? `${req.protocol}://${req.get('host')}${q.image}` : null,
-                timer: q.timer,
-                answers: answersList,
-                correctAnswer: correctAnswerIndex >= 0 ? correctAnswerIndex : 0
-            };
-        });
-
-        res.json({
-            id: quiz.id,
-            title: quiz.title,
-            description: quiz.description,
-            questions: formattedQuestions
-        });
+        res.json(formatQuizResponse(quiz, req));
     } catch (error) {
         console.error('getQuizForUnity error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
+// 5. UPDATE: Gunakan formatQuizResponse
 const getActiveQuizForUnity = async (req, res) => {
     try {
         const quiz = await prisma.quiz.findFirst({
@@ -148,36 +161,14 @@ const getActiveQuizForUnity = async (req, res) => {
 
         if (!quiz) return res.status(404).json({ error: 'No active quiz found' });
 
-        // 3. PERBAIKAN PEMANGGILAN: Baca ?limit= dari URL (default 10 soal)
-        const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
-        const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit, quiz.id);
-
-        const formattedQuestions = randomQuestions.map(q => {
-            const answersList = q.answers.map(a => a.answerText);
-            const correctAnswerIndex = q.answers.findIndex(a => a.isCorrect);
-            return {
-                id: q.id,
-                categoryName: q.category ? q.category.name : "Uncategorized",
-                question: q.question,
-                image: q.image ? `${req.protocol}://${req.get('host')}${q.image}` : null,
-                timer: q.timer,
-                answers: answersList,
-                correctAnswer: correctAnswerIndex >= 0 ? correctAnswerIndex : 0
-            };
-        });
-
-        res.json({
-            id: quiz.id,
-            title: quiz.title,
-            description: quiz.description,
-            questions: formattedQuestions
-        });
+        res.json(formatQuizResponse(quiz, req));
     } catch (error) {
         console.error('getActiveQuizForUnity error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
+// Tetap sama seperti sebelumnya
 const postAnswer = async (req, res) => {
     const { boothId, quizId, questionId, isCorrect } = req.body;
 

@@ -5,240 +5,276 @@ const defaultQuestions = [
     // --- Immersive Room ---
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Siapa nama tokoh karakter yang melakukan perjalanan waktu ke masa lalu dalam cerita Immersive Room?",
+        questionEn: "What is the name of the character who travels back in time in the Immersive Room story?",
         timer: 15,
         answers: [
-            { answerText: "Dele", isCorrect: true },
-            { answerText: "Regi", isCorrect: false }
+            { answerText: "Dele", answerTextEn: "Dele", isCorrect: true },
+            { answerText: "Regi", answerTextEn: "Regi", isCorrect: false }
         ]
     },
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Siapa nama tokoh karakter yang pertama membuat catatan tentang makanan tempe di abad ke-16 dalam cerita Immersive Room?",
+        questionEn: "What is the name of the character who first wrote a record about tempe as a food in the 16th century, in the Immersive Room story?",
         timer: 15,
         answers: [
-            { answerText: "Pangeran Tembayat", isCorrect: false },
-            { answerText: "Mas Cembolang", isCorrect: true }
+            { answerText: "Pangeran Tembayat", answerTextEn: "Prince Tembayat", isCorrect: false },
+            { answerText: "Mas Cembolang", answerTextEn: "Mas Cembolang", isCorrect: true }
         ]
     },
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Kapan tempe mulai berlayar masuk ke benua Eropa dalam cerita Immersive Room?",
+        questionEn: "When did tempe begin to sail into Europe, according to the Immersive Room story?",
         timer: 15,
         answers: [
-            { answerText: "Abad ke-18", isCorrect: false },
-            { answerText: "Abad ke-21", isCorrect: true } // Sesuaikan jika jawaban benarnya Abad ke-18
+            { answerText: "Abad ke-18", answerTextEn: "18th Century", isCorrect: false },
+            { answerText: "Abad ke-21", answerTextEn: "21st Century", isCorrect: true }
         ]
     },
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Dalam cerita di Immersive Room, disebutkan sejarah catatan pertama yang menyebutkan tentang tempe. Catatan ini ada dalam tulisan bernama?",
+        questionEn: "The Immersive Room story mentions the first historical record of tempe. What is the name of the text it appears in?",
         timer: 15,
         answers: [
-            { answerText: "Serat Rantini", isCorrect: false },
-            { answerText: "Serat Centhini", isCorrect: true }
+            { answerText: "Serat Rantini", answerTextEn: "Serat Rantini", isCorrect: false },
+            { answerText: "Serat Centhini", answerTextEn: "Serat Centhini", isCorrect: true }
         ]
     },
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Dalam cerita di Immersive Room, karakter Dele dibantu oleh 2 temannya, yaitu Regi dan...?",
+        questionEn: "In the Immersive Room story, Dele is helped by two friends. One is Regi. Who is the other?",
         timer: 15,
         answers: [
-            { answerText: "Dawun", isCorrect: true },
-            { answerText: "Pipik", isCorrect: false }
+            { answerText: "Dawun", answerTextEn: "Dawun", isCorrect: true },
+            { answerText: "Pipik", answerTextEn: "Pipik", isCorrect: false }
         ]
     },
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Dalam cerita di Immersive Room, dijelaskan bahwa dalam kosakata bahasa Jawa kuno terdapat istilah awal kata tempe, yaitu?",
+        questionEn: "The Immersive Room story explains that Old Javanese vocabulary contains the earliest form of the word \"tempe.\" What is it?",
         timer: 15,
         answers: [
-            { answerText: "Tampu", isCorrect: false },
-            { answerText: "Tumpi", isCorrect: true }
+            { answerText: "Tampu", answerTextEn: "Tampu", isCorrect: false },
+            { answerText: "Tumpi", answerTextEn: "Tumpi", isCorrect: true }
         ]
     },
     {
         categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
         question: "Dalam cerita di Immersive Room, dijelaskan mengenai catatan awal berdirinya pabrik tempe di Belanda, yaitu pada tahun?",
+        questionEn: "The Immersive Room story describes the earliest record of a tempe factory being established in the Netherlands. In what year was it?",
         timer: 15,
         answers: [
-            { answerText: "1986", isCorrect: false },
-            { answerText: "1945", isCorrect: true } // Sesuaikan jika 1986 yang benar
+            { answerText: "1986", answerTextEn: "1986", isCorrect: false },
+            { answerText: "1945", answerTextEn: "1945", isCorrect: true }
         ]
     },
 
-    // --- Tempe Warrior ---
+    // --- Tempe Warrior / Traditional Process Area ---
     {
         categoryName: "Tempe Warrior",
+        categoryNameEn: "Traditional Process Area",
         question: "Di area Tempe Warrior, ada penayangan video tentang seorang pembuat tempe benguk yang berasal dari Kulon Progo, siapakah dia?",
+        questionEn: "In the Traditional Process Area, a video shows a maker of tempe benguk from Kulon Progo. Who is she?",
         timer: 15,
         answers: [
-            { answerText: "Bu Rohayah", isCorrect: true },
-            { answerText: "Bu Painah", isCorrect: false }
+            { answerText: "Bu Rohayah", answerTextEn: "Mrs. Rohayah", isCorrect: true },
+            { answerText: "Bu Painah", answerTextEn: "Mrs. Painah", isCorrect: false }
         ]
     },
     {
         categoryName: "Tempe Warrior",
+        categoryNameEn: "Traditional Process Area",
         question: "Di area Tempe Warrior, ada penayangan video tentang seorang pembuat dan yang mengenalkan tempe koro, siapakah dia?",
+        questionEn: "In the Traditional Process Area, a video shows a maker who introduced koro tempe. Who is she?",
         timer: 15,
         answers: [
-            { answerText: "Bu Tuminah", isCorrect: false },
-            { answerText: "Bu Tugiyem", isCorrect: true }
+            { answerText: "Bu Tuminah", answerTextEn: "Mrs. Tuminah", isCorrect: false },
+            { answerText: "Bu Tugiyem", answerTextEn: "Mrs. Tugiyem", isCorrect: true }
         ]
     },
     {
         categoryName: "Tempe Warrior",
+        categoryNameEn: "Traditional Process Area",
         question: "Di area Tempe Warrior, ada penayangan video tentang pembuatan tempe benguk secara tradisional. Terbuat dari apakah bahan bakunya?",
+        questionEn: "In the Traditional Process Area, a video shows the traditional making of tempe benguk. What is the raw material?",
         timer: 15,
         answers: [
-            { answerText: "Kacang mede", isCorrect: false },
-            { answerText: "Kacang koro benguk", isCorrect: true }
+            { answerText: "Kacang mede", answerTextEn: "Cashew nuts", isCorrect: false },
+            { answerText: "Kacang koro benguk", answerTextEn: "Koro benguk beans", isCorrect: true }
         ]
     },
 
     // --- Digital Interactive Animation - Proses Pembuatan Tempe ---
     {
         categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        categoryNameEn: "Digital Interactive Animation: Tempe-Making Process",
         question: "Langkah awal dalam proses pembuatan tempe tradisional adalah membersihkan kotoran yang menempel pada biji kedelai. Tahap ini disebut dengan?",
+        questionEn: "The first step in traditional tempe making is removing the dirt clinging to the soybeans. What is this step called?",
         timer: 15,
         answers: [
-            { answerText: "Mencuci kedelai", isCorrect: true },
-            { answerText: "Menggiling kedelai", isCorrect: false }
+            { answerText: "Mencuci kedelai", answerTextEn: "Washing the soybeans", isCorrect: true },
+            { answerText: "Menggiling kedelai", answerTextEn: "Grinding the soybeans", isCorrect: false }
         ]
     },
     {
         categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        categoryNameEn: "Digital Interactive Animation: Tempe-Making Process",
         question: "Setelah kedelai bersih dan digiling, langkah krusial untuk memulai proses fermentasi agar kedelai berubah menjadi tempe adalah?",
+        questionEn: "After the soybeans are cleaned and ground, what is the crucial step that starts the fermentation that turns soybeans into tempe?",
         timer: 15,
         answers: [
-            { answerText: "Membungkus kedelai dengan daun", isCorrect: false },
-            { answerText: "Penambahan ragi", isCorrect: true }
+            { answerText: "Membungkus kedelai dengan daun", answerTextEn: "Wrapping the soybeans in leaves", isCorrect: false },
+            { answerText: "Penambahan ragi", answerTextEn: "Adding the starter (ragi)", isCorrect: true }
         ]
     },
     {
         categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        categoryNameEn: "Digital Interactive Animation: Tempe-Making Process",
         question: "Pada metode pembuatan tradisional, bahan alami yang digunakan sebagai wadah untuk membungkus kedelai selama masa fermentasi adalah?",
+        questionEn: "In the traditional method, what natural material is used to wrap the soybeans during fermentation?",
         timer: 15,
         answers: [
-            { answerText: "Daun (seperti daun pisang atau daun jati)", isCorrect: true },
-            { answerText: "Plastik kedap udara", isCorrect: false }
+            { answerText: "Daun (seperti daun pisang atau daun jati)", answerTextEn: "Leaves (such as banana or teak leaves)", isCorrect: true },
+            { answerText: "Plastik kedap udara", answerTextEn: "Airtight plastic", isCorrect: false }
         ]
     },
 
     // --- World of Soybean ---
     {
         categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
         question: "Varietas unggul kedelai yang paling banyak digunakan petani di Indonesia adalah?",
+        questionEn: "Which improved soybean variety is most widely used by farmers in Indonesia?",
         timer: 15,
         answers: [
-            { answerText: "Anjasmoro", isCorrect: true },
-            { answerText: "Grobogan", isCorrect: false }
+            { answerText: "Anjasmoro", answerTextEn: "Anjasmoro", isCorrect: true },
+            { answerText: "Grobogan", answerTextEn: "Grobogan", isCorrect: false }
         ]
     },
     {
         categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
         question: "Varietas unggul kedelai Mahameru di Indonesia paling banyak ditemukan di provinsi?",
+        questionEn: "In which province is the Mahameru improved soybean variety most commonly found in Indonesia?",
         timer: 15,
         answers: [
-            { answerText: "Aceh", isCorrect: true },
-            { answerText: "Sulawesi Selatan", isCorrect: false }
+            { answerText: "Aceh", answerTextEn: "Aceh", isCorrect: true },
+            { answerText: "Sulawesi Selatan", answerTextEn: "South Sulawesi", isCorrect: false }
         ]
     },
     {
         categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
         question: "Jumlah petani kedelai di Indonesia saat ini estimasi jumlahnya mencapai berapa?",
+        questionEn: "What is the current estimated number of soybean farmers in Indonesia?",
         timer: 15,
         answers: [
-            { answerText: "15 juta petani", isCorrect: false },
-            { answerText: "15 ribu petani", isCorrect: true }
+            { answerText: "15 juta petani", answerTextEn: "15 million farmers", isCorrect: false },
+            { answerText: "15 ribu petani", answerTextEn: "15 thousand farmers", isCorrect: true }
         ]
     },
     {
         categoryName: "World of Soybean",
-        question: "Di area World of Soybean, ada penjelasan informasi tentang?",
+        categoryNameEn: "World of Soybean", question: "Di area World of Soybean, ada penjelasan informasi tentang?",
+        questionEn: "What information is explained in the World of Soybean area?",
         timer: 15,
         answers: [
-            { answerText: "Profil pembuat tempe", isCorrect: false },
-            { answerText: "Sejarah kedelai", isCorrect: true }
+            { answerText: "Profil pembuat tempe", answerTextEn: "Profiles of tempe makers", isCorrect: false },
+            { answerText: "Sejarah kedelai", answerTextEn: "History of soybeans", isCorrect: true }
         ]
     },
     {
         categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
         question: "Varietas unggul kedelai Wilis di Indonesia paling banyak ditemukan di provinsi?",
+        questionEn: "In which province is the Wilis improved soybean variety most commonly found in Indonesia?",
         timer: 15,
         answers: [
-            { answerText: "Jawa Timur", isCorrect: true },
-            { answerText: "Jawa Barat", isCorrect: false }
+            { answerText: "Jawa Timur", answerTextEn: "East Java", isCorrect: true },
+            { answerText: "Jawa Barat", answerTextEn: "West Java", isCorrect: false }
         ]
     },
-
     // --- Ragi & Mycelium ---
     {
         categoryName: "Ragi & Mycelium",
+        categoryNameEn: "Ragi & Mycelium",
         question: "Dalam proses pembuatan tempe, kedelai akan difermentasi dengan cara ditaburkan ragi yang bernama Latin?",
+        questionEn: "In tempe production, soybeans are fermented by sprinkling on a starter (ragi). What is its Latin name?",
         timer: 15,
         answers: [
-            { answerText: "Rhizopus oligosporus", isCorrect: true },
-            { answerText: "Agaricus bisporus", isCorrect: false }
+            { answerText: "Rhizopus oligosporus", answerTextEn: "Rhizopus oligosporus", isCorrect: true },
+            { answerText: "Agaricus bisporus", answerTextEn: "Agaricus bisporus", isCorrect: false }
         ]
     },
     {
         categoryName: "Ragi & Mycelium",
+        categoryNameEn: "Ragi & Mycelium",
         question: "Dalam proses fermentasi tempe, terjadi proses pengikatan dari jamur yang membuat kedelai menjadi lebih padat dan bentuknya seperti benang putih. Istilah ilmiahnya adalah?",
+        questionEn: "During tempe fermentation, the mold binds the soybeans together, making them denser, and forms white threadlike strands. What is the scientific term for these?",
         timer: 15,
         answers: [
-            { answerText: "Ekologi", isCorrect: false },
-            { answerText: "Miselium", isCorrect: true }
+            { answerText: "Ekologi", answerTextEn: "Ecology", isCorrect: false },
+            { answerText: "Miselium", answerTextEn: "Mycelium", isCorrect: true }
         ]
     },
-
     // --- Tempe Production ---
     {
         categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
         question: "Dalam proses produksi tempe, apa tahap paling awal yang harus dilakukan terhadap kacang kedelai mentah untuk melunakkan teksturnya?",
+        questionEn: "In tempe production, what is the very first step for softening the texture of raw soybeans?",
         timer: 15,
         answers: [
-            { answerText: "Mencuci dan merendam kacang kedelai", isCorrect: true },
-            { answerText: "Membungkus kacang kedelai dengan daun pisang", isCorrect: false }
+            { answerText: "Mencuci dan merendam kacang kedelai", answerTextEn: "Washing and soaking the soybeans", isCorrect: true },
+            { answerText: "Membungkus kacang kedelai dengan daun pisang", answerTextEn: "Wrapping the soybeans in banana leaves", isCorrect: false }
         ]
     },
     {
         categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
         question: "Dalam proses produksi tempe, setelah kacang kedelai dimasak atau direbus, tindakan apa yang perlu dilakukan agar jamur tempe dapat tumbuh merata pada biji kedelai?",
+        questionEn: "After the soybeans are cooked or boiled, what must be done so the tempe mold can grow evenly on the beans?",
         timer: 15,
         answers: [
-            { answerText: "Menambahkan garam dapur dalam jumlah banyak", isCorrect: false },
-            { answerText: "Mengupas kulit ari kacang kedelai", isCorrect: true }
+            { answerText: "Menambahkan garam dapur dalam jumlah banyak", answerTextEn: "Adding a large amount of table salt", isCorrect: false },
+            { answerText: "Mengupas kulit ari kacang kedelai", answerTextEn: "Removing the soybean skins", isCorrect: true }
         ]
     },
     {
         categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
         question: "Dalam proses produksi tempe, mengapa kacang kedelai yang sudah matang harus dipastikan kering (tiris) dari air sebelum diberi ragi?",
+        questionEn: "Why must cooked soybeans be thoroughly drained and dried before the starter is added?",
         timer: 15,
         answers: [
-            { answerText: "Agar tekstur tempe menjadi keras seperti batu saat digoreng", isCorrect: false },
-            { answerText: "Agar ragi dapat bekerja optimal dan menghindari pembusukan", isCorrect: true }
+            { answerText: "Agar tekstur tempe menjadi keras seperti batu saat digoreng", answerTextEn: "So the tempe becomes hard as a rock when fried", isCorrect: false },
+            { answerText: "Agar ragi dapat bekerja optimal dan menghindari pembusukan", answerTextEn: "So the starter can work optimally and spoilage is prevented", isCorrect: true }
         ]
     },
     {
         categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
         question: "Dalam proses produksi tempe, kapan waktu yang paling tepat untuk mencampurkan ragi ke dalam kacang kedelai?",
+        questionEn: "When is the best time to mix the starter into the soybeans?",
         timer: 15,
         answers: [
-            { answerText: "Saat kedelai sudah dalam kondisi kering dan suhu sudah mendingin", isCorrect: true },
-            { answerText: "Saat kedelai masih sangat panas mendidih di dalam panci", isCorrect: false }
-        ]
-    },
-    {
-        categoryName: "Tempe Production",
-        question: "Dalam proses produksi tempe tradisional, bahan apa yang paling umum digunakan untuk membungkus tempe?",
-        timer: 15,
-        answers: [
-            { answerText: "Daun pepaya", isCorrect: false },
-            { answerText: "Daun pisang", isCorrect: true }
+            { answerText: "Saat kedelai sudah dalam kondisi kering dan suhu sudah mendingin", answerTextEn: "When the soybeans are dry and have cooled down", isCorrect: true },
+            { answerText: "Saat kedelai masih sangat panas mendidih di dalam panci", answerTextEn: "When the soybeans are still boiling hot in the pot", isCorrect: false }
         ]
     }
-];
+]
 
 async function main() {
     const password = await bcrypt.hash('admin123', 10);
@@ -271,36 +307,57 @@ async function main() {
         quiz = await prisma.quiz.create({
             data: {
                 title: "Tempe Park - Tempe Gacha",
+                titleEn: "Tempe Park - Tempe Gacha",
                 description: "Jawab Kuisnya, Ambil Gachanya!",
+                descriptionEn: "Answer the Quiz, Claim Your Gacha!",
                 status: true
             }
         });
         console.log('Quiz "Tempe Park - Tempe Gacha" created successfully');
     } else {
-        console.log('Quiz "Tempe Park - Tempe Gacha" already exists');
+        // Update versi bahasa Inggris jika quiz sudah ada
+        quiz = await prisma.quiz.update({
+            where: { id: quiz.id },
+            data: {
+                titleEn: "Tempe Park - Tempe Gacha",
+                descriptionEn: "Answer the Quiz, Claim Your Gacha!"
+            }
+        });
+        console.log('Quiz "Tempe Park - Tempe Gacha" updated with English translation');
     }
 
-    // 3. Ekstrak unik kategori dari defaultQuestions
-    const categoryNames = [...new Set(defaultQuestions.map(q => q.categoryName))];
+    // 3. Ekstrak unik kategori beserta versi Inggrisnya
+    const uniqueCategories = new Map();
+    for (const q of defaultQuestions) {
+        if (!uniqueCategories.has(q.categoryName)) {
+            uniqueCategories.set(q.categoryName, q.categoryNameEn);
+        }
+    }
     const categoryMap = {};
 
-    // 4. Find or Create Categories
-    for (const name of categoryNames) {
+    // 4. Find or Create / Update Categories
+    for (const [name, nameEn] of uniqueCategories.entries()) {
         let category = await prisma.category.findFirst({
             where: { name: name }
         });
 
         if (!category) {
             category = await prisma.category.create({
-                data: { name: name }
+                data: { name: name, nameEn: nameEn }
             });
             console.log(`Category "${name}" created successfully`);
+        } else {
+            category = await prisma.category.update({
+                where: { id: category.id },
+                data: { nameEn: nameEn }
+            });
         }
-        categoryMap[name] = category.id; // Simpan ID untuk referensi relasi ke soal
+        categoryMap[name] = category.id;
     }
 
-    // 5. Tambahkan Question (dengan categoryId) dan Answer nya
+    // 5. Tambahkan / Update Question dan Answer nya
     let addedQuestionsCount = 0;
+    let updatedQuestionsCount = 0;
 
     for (const qData of defaultQuestions) {
         const existingQuestion = await prisma.question.findFirst({
@@ -311,20 +368,21 @@ async function main() {
         });
 
         if (!existingQuestion) {
-            // Create question dengan relasi ke categoryId
+            // Create question baru lengkap dengan versi Inggris
             const newQuestion = await prisma.question.create({
                 data: {
                     quizId: quiz.id,
-                    categoryId: categoryMap[qData.categoryName], // Menyisipkan kategori di sini
+                    categoryId: categoryMap[qData.categoryName],
                     question: qData.question,
+                    questionEn: qData.questionEn,
                     timer: qData.timer
                 }
             });
 
-            // Create answers untuk question ini
             const answersData = qData.answers.map(ans => ({
                 questionId: newQuestion.id,
                 answerText: ans.answerText,
+                answerTextEn: ans.answerTextEn,
                 isCorrect: ans.isCorrect
             }));
 
@@ -333,8 +391,30 @@ async function main() {
             });
 
             addedQuestionsCount++;
+        } else {
+            // Update terjemahan Inggris untuk soal & jawaban yang sudah ada
+            await prisma.question.update({
+                where: { id: existingQuestion.id },
+                data: { questionEn: qData.questionEn }
+            });
+
+            for (const ans of qData.answers) {
+                await prisma.answer.updateMany({
+                    where: {
+                        questionId: existingQuestion.id,
+                        answerText: ans.answerText
+                    },
+                    data: {
+                        answerTextEn: ans.answerTextEn
+                    }
+                });
+            }
+
+            updatedQuestionsCount++;
         }
     }
+
+    console.log(`Added: ${addedQuestionsCount} new questions | Updated English translation: ${updatedQuestionsCount} existing questions.`);
 
     if (addedQuestionsCount > 0) {
         console.log(`Successfully added ${addedQuestionsCount} new categorized questions to the Tempe Park quiz.`);

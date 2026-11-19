@@ -20,6 +20,7 @@ model User {
 model Category {
   id          Int        @id @default(autoincrement())
   name        String     @unique // Contoh: "IMMERSIVE ROOM", "TEMPE WARRIOR"
+  nameEn      String? 
   description String?
   
   questions   Question[]
@@ -30,7 +31,9 @@ model Category {
 model Quiz {
   id          Int        @id @default(autoincrement())
   title       String
+  titleEn       String?
   description String?
+    descriptionEn String?
   status      Boolean    @default(true)
 
   questions   Question[]
@@ -49,6 +52,7 @@ model Question {
   category    Category?  @relation(fields: [categoryId], references: [id])
 
   question    String
+  questionEn  String?
   image       String?
   timer       Int        @default(15)
 
@@ -64,6 +68,7 @@ model Answer {
   question    Question   @relation(fields: [questionId], references: [id])
 
   answerText  String
+   answerTextEn String? 
   isCorrect   Boolean    @default(false)
 
   createdAt   DateTime   @default(now())
