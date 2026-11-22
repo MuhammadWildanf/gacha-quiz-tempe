@@ -273,6 +273,235 @@ const defaultQuestions = [
             { answerText: "Saat kedelai sudah dalam kondisi kering dan suhu sudah mendingin", answerTextEn: "When the soybeans are dry and have cooled down", isCorrect: true },
             { answerText: "Saat kedelai masih sangat panas mendidih di dalam panci", answerTextEn: "When the soybeans are still boiling hot in the pot", isCorrect: false }
         ]
+    },
+
+    // ============================================================
+    // ADDITIONAL QUESTIONS (sumber: additional-question.md)
+    // ============================================================
+
+    // --- Immersive Room (tambahan) ---
+    {
+        categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
+        question: "Mengapa Serat Centhini dianggap penting dalam perjalanan sejarah tempe di Indonesia?",
+        questionEn: "Why is Serat Centhini considered important in the history of tempe in Indonesia?",
+        timer: 15,
+        answers: [
+            { answerText: "Karena memuat catatan tentang tempe", answerTextEn: "Because it contains a record of tempe", isCorrect: true },
+            { answerText: "Karena menjelaskan cara budidaya kedelai", answerTextEn: "Because it explains how to cultivate soybeans", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
+        question: "Dalam cerita Immersive Room, tokoh Mas Cembolang memiliki keterkaitan dengan sejarah tempe. Pada abad berapakah peristiwa tersebut berlangsung?",
+        questionEn: "In the Immersive Room story, Mas Cembolang is associated with the history of tempe. In which century did this event take place?",
+        timer: 15,
+        answers: [
+            { answerText: "Abad ke-16", answerTextEn: "16th Century", isCorrect: true },
+            { answerText: "Abad ke-20", answerTextEn: "20th Century", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Immersive Room",
+        categoryNameEn: "Immersive Room",
+        question: "Benua manakah yang menjadi tujuan penyebaran tersebut dalam cerita Immersive Room?",
+        questionEn: "Which continent was its destination in the Immersive Room story?",
+        timer: 15,
+        answers: [
+            { answerText: "Eropa", answerTextEn: "Europe", isCorrect: true },
+            { answerText: "Afrika", answerTextEn: "Africa", isCorrect: false }
+        ]
+    },
+
+    // --- Tempe Warrior / Traditional Process Area (tambahan) ---
+    {
+        categoryName: "Tempe Warrior",
+        categoryNameEn: "Traditional Process Area",
+        question: "Tempe tradisional Indonesia tidak hanya dibuat dari kedelai. Salah satu bahan alternatif yang ditampilkan dalam Traditional Process Area adalah ...",
+        questionEn: "Traditional Indonesian tempe is not made only from soybeans. One alternative ingredient featured in the Traditional Process Area is ...",
+        timer: 15,
+        answers: [
+            { answerText: "Kacang koro", answerTextEn: "Koro beans", isCorrect: true },
+            { answerText: "Kacang hijau", answerTextEn: "Mung beans", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Tempe Warrior",
+        categoryNameEn: "Traditional Process Area",
+        question: "Apa nilai penting yang dapat dipelajari dari video para pengrajin tempe tradisional di zona ini?",
+        questionEn: "What important value can visitors learn from the videos of traditional tempe makers in this area?",
+        timer: 15,
+        answers: [
+            { answerText: "Pelestarian pengetahuan dan keterampilan pembuatan tempe", answerTextEn: "Preserving traditional tempe-making knowledge and skills", isCorrect: true },
+            { answerText: "Penggantian seluruh proses tradisional dengan mesin", answerTextEn: "Replacing all traditional processes with machines", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Tempe Warrior",
+        categoryNameEn: "Traditional Process Area",
+        question: "Tempe benguk merupakan salah satu variasi tempe khas Indonesia. Bahan utama apa yang membedakannya dari tempe kedelai pada umumnya?",
+        questionEn: "Tempe benguk is a traditional Indonesian tempe variety. Which main ingredient distinguishes it from ordinary soybean tempe?",
+        timer: 15,
+        answers: [
+            { answerText: "Kacang benguk", answerTextEn: "Benguk beans", isCorrect: true },
+            { answerText: "Kedelai hitam", answerTextEn: "Black soybeans", isCorrect: false }
+        ]
+    },
+
+    // --- Digital Interactive Animation: Tempe-Making Process (tambahan) ---
+    {
+        categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        categoryNameEn: "Digital Interactive Animation: Tempe-Making Process",
+        question: "Mengapa kedelai perlu dibersihkan sebelum memasuki tahapan pengolahan berikutnya?",
+        questionEn: "Why must soybeans be cleaned before moving on to the next processing stage?",
+        timer: 15,
+        answers: [
+            { answerText: "Untuk menghilangkan kotoran dan zat pengotor", answerTextEn: "To remove dirt and impurities", isCorrect: true },
+            { answerText: "Untuk menambah kandungan gula", answerTextEn: "To increase their sugar content", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        categoryNameEn: "Digital Interactive Animation: Tempe-Making Process",
+        question: "Apa yang terjadi ketika ragi tempe ditambahkan ke dalam kedelai yang telah dipersiapkan dengan benar?",
+        questionEn: "What happens when tempe starter is added to properly prepared soybeans?",
+        timer: 15,
+        answers: [
+            { answerText: "Proses fermentasi dimulai", answerTextEn: "Fermentation begins", isCorrect: true },
+            { answerText: "Kedelai langsung menjadi matang", answerTextEn: "The soybeans become fully cooked immediately", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Digital Interactive Animation - Proses Pembuatan Tempe",
+        categoryNameEn: "Digital Interactive Animation: Tempe-Making Process",
+        question: "Mengapa daun pisang atau daun jati sering digunakan sebagai pembungkus dalam pembuatan tempe tradisional?",
+        questionEn: "Why are banana or teak leaves commonly used as wrappers in traditional tempe production?",
+        timer: 15,
+        answers: [
+            { answerText: "Sebagai pembungkus alami selama fermentasi", answerTextEn: "As natural wrappers during fermentation", isCorrect: true },
+            { answerText: "Sebagai bahan utama pembentuk ragi", answerTextEn: "As the main ingredient used to make the starter", isCorrect: false }
+        ]
+    },
+
+    // --- World of Soybean (tambahan) ---
+    {
+        categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
+        question: "Mengapa kedelai menjadi komoditas pertanian yang penting bagi masyarakat Indonesia?",
+        questionEn: "Why are soybeans an important agricultural commodity for Indonesian society?",
+        timer: 15,
+        answers: [
+            { answerText: "Karena menjadi bahan baku berbagai produk pangan", answerTextEn: "Because they are used as raw materials for various food products", isCorrect: true },
+            { answerText: "Karena hanya digunakan sebagai pakan ternak", answerTextEn: "Because they are only used as animal feed", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
+        question: "Berdasarkan informasi zona World of Soybean, varietas kedelai manakah yang dikenal banyak ditemukan di Jawa Timur?",
+        questionEn: "According to the information in the World of Soybean area, which soybean variety is commonly found in East Java?",
+        timer: 15,
+        answers: [
+            { answerText: "Wilis", answerTextEn: "Wilis", isCorrect: true },
+            { answerText: "Mahameru", answerTextEn: "Mahameru", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "World of Soybean",
+        categoryNameEn: "World of Soybean",
+        question: "Apa tujuan utama pengembangan varietas unggul kedelai seperti Anjasmoro, Wilis, dan Mahameru?",
+        questionEn: "What is the main purpose of developing improved soybean varieties such as Anjasmoro, Wilis, and Mahameru?",
+        timer: 15,
+        answers: [
+            { answerText: "Meningkatkan kualitas dan produktivitas kedelai", answerTextEn: "To improve soybean quality and productivity", isCorrect: true },
+            { answerText: "Mengurangi keberagaman varietas kedelai", answerTextEn: "To reduce soybean variety diversity", isCorrect: false }
+        ]
+    },
+
+    // --- Ragi & Mycelium (tambahan) ---
+    {
+        categoryName: "Ragi & Mycelium",
+        categoryNameEn: "Ragi & Mycelium",
+        question: "Mikroorganisme apa yang berperan penting dalam proses fermentasi kedelai menjadi tempe?",
+        questionEn: "Which microorganism plays an important role in fermenting soybeans into tempe?",
+        timer: 15,
+        answers: [
+            { answerText: "Kapang (mold)", answerTextEn: "Mold", isCorrect: true },
+            { answerText: "Alga (algae)", answerTextEn: "Algae", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Ragi & Mycelium",
+        categoryNameEn: "Ragi & Mycelium",
+        question: "Bagaimana tampilan miselium yang tumbuh selama proses fermentasi tempe?",
+        questionEn: "What does mycelium look like as it grows during tempe fermentation?",
+        timer: 15,
+        answers: [
+            { answerText: "Benang-benang halus berwarna putih", answerTextEn: "Fine white thread-like structures", isCorrect: true },
+            { answerText: "Lapisan cair berwarna kuning", answerTextEn: "A yellow liquid layer", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Ragi & Mycelium",
+        categoryNameEn: "Ragi & Mycelium",
+        question: "Apa perubahan fisik yang paling mudah diamati pada kedelai setelah mengalami fermentasi tempe secara optimal?",
+        questionEn: "What is the most noticeable physical change in soybeans after optimal tempe fermentation?",
+        timer: 15,
+        answers: [
+            { answerText: "Biji kedelai menyatu membentuk tempe yang padat", answerTextEn: "The soybeans bind together into a firm block of tempe", isCorrect: true },
+            { answerText: "Biji kedelai berubah menjadi tepung", answerTextEn: "The soybeans turn into flour", isCorrect: false }
+        ]
+    },
+
+    // --- Tempe Production (tambahan) ---
+    {
+        categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
+        question: "Dalam produksi tempe, mengapa kedelai perlu direbus atau dimasak sebelum diberi ragi?",
+        questionEn: "Why do soybeans need to be boiled or cooked before the starter is added?",
+        timer: 15,
+        answers: [
+            { answerText: "Untuk melunakkan kedelai dan mempersiapkannya untuk fermentasi", answerTextEn: "To soften the soybeans and prepare them for fermentation", isCorrect: true },
+            { answerText: "Untuk menghilangkan seluruh kandungan protein", answerTextEn: "To remove all of their protein content", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
+        question: "Mengapa ragi tidak dianjurkan untuk dicampurkan ketika kedelai masih dalam keadaan sangat panas?",
+        questionEn: "Why should the starter not be mixed into soybeans while they are still very hot?",
+        timer: 15,
+        answers: [
+            { answerText: "Karena suhu tinggi dapat merusak atau menghambat pertumbuhan kapang", answerTextEn: "Because high temperatures can damage or inhibit mold growth", isCorrect: true },
+            { answerText: "Karena suhu tinggi membuat kedelai menjadi lebih manis", answerTextEn: "Because high temperatures make the soybeans sweeter", isCorrect: false }
+        ]
+    },
+    {
+        categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
+        question: "Bagaimana ciri tempe yang menunjukkan bahwa proses fermentasinya berhasil dengan baik?",
+        questionEn: "What is a characteristic of tempe that indicates successful fermentation?",
+        timer: 15,
+        answers: [
+            { answerText: "Biji kedelai menyatu dan terikat oleh lapisan putih miselium", answerTextEn: "The soybeans are bound together by a white layer of mycelium", isCorrect: true },
+            { answerText: "Biji kedelai terpisah dan terendam dalam cairan", answerTextEn: "The soybeans remain separated and submerged in liquid", isCorrect: false }
+        ]
+    },
+
+    // --- Soal lama (id 25) yang belum punya terjemahan Inggris di database ---
+    // Catatan: teks bahasa Indonesia sengaja dipertahankan persis supaya
+    // logika update di bawah mencocokkan soal/jawaban yang sudah ada.
+    {
+        categoryName: "Tempe Production",
+        categoryNameEn: "Tempe Production",
+        question: "Dalam proses produksi tempe tradisional, bahan apa yang paling umum digunakan untuk membungkus tempe?",
+        questionEn: "In traditional tempe production, what is the most commonly used material for wrapping tempe?",
+        timer: 15,
+        answers: [
+            { answerText: "Daun pepaya", answerTextEn: "Papaya leaves", isCorrect: false },
+            { answerText: "Daun pisang", answerTextEn: "Banana leaves", isCorrect: true }
+        ]
     }
 ]
 

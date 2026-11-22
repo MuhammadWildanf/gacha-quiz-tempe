@@ -72,10 +72,26 @@ const getBalancedRandomQuestions = (questions, limit = 10, quizId = 'default', l
 };
 
 // 2. UPDATE BARU: Helper untuk memformat response sesuai bahasa (?lang=id atau ?lang=en)
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+
+// Untuk ?lang=en, jangan pernah mengirim soal yang terjemahannya belum lengkap.
+// Jika tidak difilter, field kosong akan jatuh ke fallback bahasa Indonesia.
+const isReadyForEnglish = (q) =>
+    hasText(q.questionEn) &&
+    Array.isArray(q.answers) &&
+    q.answers.length > 0 &&
+    q.answers.every(a => hasText(a.answerTextEn)) &&
+    (!q.category || hasText(q.category.nameEn));
+
 const formatQuizResponse = (quiz, req) => {
     const lang = req.query.lang === 'en' ? 'en' : 'id';
     const limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 10;
-    const randomQuestions = getBalancedRandomQuestions(quiz.questions, limit, quiz.id, lang);
+
+    const sourceQuestions = lang === 'en'
+        ? quiz.questions.filter(isReadyForEnglish)
+        : quiz.questions;
+
+    const randomQuestions = getBalancedRandomQuestions(sourceQuestions, limit, quiz.id, lang);
 
     const formattedQuestions = randomQuestions.map(q => {
         // PASTIKAN nama field Inggris di bawah (answerTextEn, questionEn, nameEn) sesuai dengan schema.prisma Anda
