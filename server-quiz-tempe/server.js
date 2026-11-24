@@ -230,6 +230,9 @@ wss.on("connection", (ws) => {
 
                     // Resume sesi mesin yang sama, atau ambil alih tiket "yatim"
                     // (Unity mati / putus tanpa sempat mengirim close).
+                    // Percobaan yang terputus di tengah sudah tercatat saat game_start,
+                    // jadi pengambil alih cukup membuang status "sedang main".
+                    if (!sameMachine) existing.attemptActive = false;
                     existing.usedByMachine = machineId;
                     existing.usedAt = existing.usedAt || now;
                     existing.inProgress = true;
@@ -258,6 +261,7 @@ wss.on("connection", (ws) => {
                     existing.usedByMachine = machineId;
                     existing.usedAt = now;
                     existing.inProgress = true;
+                    existing.attemptActive = false;
                     if (!trySaveLedger(ledger, "re-admit")) {
                         ws.send(JSON.stringify({
                             type: "scan_result", success: false, reason: "STORAGE_ERROR",
@@ -394,6 +398,60 @@ wss.on("connection", (ws) => {
                 });
             }
 
+            else if (data.type === "game_start") {
+                const scannedQr = String(data.qrCode || "").trim();
+                const machineId = String(data.machineId || "");
+                const now = getTimestamp();
+                ws.machineId = machineId;
+
+                const fail = (reason, message) => ws.send(JSON.stringify({
+                    type: "game_start_result", success: false, qrCode: scannedQr, reason, message
+                }));
+
+                const ledger = loadLedger();
+                const entry = ledger.find(e => e.qrCode === scannedQr);
+                if (!entry) return fail("NOT_FOUND", "Tiket tidak ditemukan.");
+                ensureAttemptData(entry);
+
+                // Hanya mesin pemegang tiket yang boleh memulai permainan.
+                // Satu percobaan = satu game_start, dan hanya 1 yang aktif sekaligus.
+                const canStart = entry.usedByMachine === machineId &&
+                    ((entry.state === "pending" && entry.attemptActive !== true) || entry.state === "retry_allowed");
+                if (!canStart) {
+                    console.log(`⛔ [WS] game_start ${scannedQr} dari ${machineId} ditolak (state=${entry.state}, pemegang=${entry.usedByMachine}).`);
+                    return fail("NOT_ALLOWED", "Permainan tidak bisa dimulai untuk tiket ini.");
+                }
+
+                if (entry.attemptCount >= entry.maxAttempts) {
+                    entry.state = "used";
+                    entry.attemptActive = false;
+                    entry.completedAt = entry.completedAt || now;
+                    trySaveLedger(ledger, "start-exhausted");
+                    return fail("ATTEMPTS_EXHAUSTED", "Kesempatan bermain tiket ini sudah habis.");
+                }
+
+                // Percobaan dihitung SAAT MULAI, bukan saat selesai. Jadi mesin yang
+                // terputus / app ditutup di tengah permainan tetap memakai kesempatan.
+                entry.attemptCount += 1;
+                entry.attemptActive = true;
+                entry.attemptStartedAt = now;
+                entry.state = "pending";
+                entry.inProgress = true;
+                entry.attemptsRemaining = Math.max(0, entry.maxAttempts - entry.attemptCount);
+
+                if (!trySaveLedger(ledger, "game-start")) {
+                    return fail("STORAGE_ERROR", "Server gagal menyimpan data tiket. Hubungi petugas.");
+                }
+                console.log(`▶️ [WS] [${now}] QR ${scannedQr.slice(0, 12)}… mulai percobaan ${entry.attemptCount}/${entry.maxAttempts} di mesin ${machineId}.`);
+
+                ws.send(JSON.stringify({
+                    type: "game_start_result", success: true, qrCode: scannedQr,
+                    attemptCount: entry.attemptCount,
+                    maxAttempts: entry.maxAttempts,
+                    attemptsRemaining: entry.attemptsRemaining
+                }));
+            }
+
             else if (data.type === "game_finish") {
                 const scannedQr = String(data.qrCode || "").trim();
                 const machineId = String(data.machineId || "");
@@ -410,11 +468,10 @@ wss.on("connection", (ws) => {
 
                 ensureAttemptData(entry);
 
-                // Terima finish dari sesi yang masih berjalan — termasuk sesi yang
-                // sempat "released" karena koneksi putus lalu tersambung lagi
-                // (inProgress), supaya hasil kemenangan tidak hilang.
-                const canAcceptFinish = entry.state === "pending" ||
-                    (entry.inProgress === true && entry.state !== "used");
+                // Finish diterima dari percobaan yang aktif (sudah dihitung di game_start),
+                // termasuk setelah koneksi putus lalu tersambung lagi.
+                const canAcceptFinish = entry.state !== "used" &&
+                    (entry.attemptActive === true || entry.state === "pending");
 
                 if (!canAcceptFinish) {
                     console.log(`ℹ️ [WS] game_finish ${scannedQr} ditolak karena status: ${entry.state}.`);
@@ -448,7 +505,10 @@ wss.on("connection", (ws) => {
                     : "";
 
                 entry.usedByMachine = machineId;
-                entry.attemptCount += 1;
+                // Percobaan sudah dihitung di game_start. Hanya client lama (tanpa
+                // game_start) yang dihitung di sini.
+                if (entry.attemptActive !== true) entry.attemptCount += 1;
+                entry.attemptActive = false;
                 const attemptRecord = {
                     attempt: entry.attemptCount,
                     finishedAt: now,
@@ -476,9 +536,9 @@ wss.on("connection", (ws) => {
 
                 if (isFinal) {
                     entry.completedAt = now;
-                } else {
-                    entry.usedByMachine = null;
                 }
+                // Kalau belum final, usedByMachine tetap: hanya mesin ini yang boleh
+                // memulai percobaan berikutnya lewat game_start.
 
                 if (!trySaveLedger(ledger, "game-finish")) {
                     ws.send(JSON.stringify({
@@ -549,8 +609,16 @@ wss.on("connection", (ws) => {
                 if (e.state === "pending" && e.usedByMachine === mid) {
                     released++;
                     ensureAttemptData(e);
-                    e.state = e.attemptCount > 0 ? "retry_allowed" : "released";
-                    e.usedByMachine = null;
+                    // Percobaan yang sedang main tetap terhitung (sudah dicatat di game_start).
+                    if (e.attemptCount >= e.maxAttempts) {
+                        e.state = "used";
+                        e.completedAt = e.completedAt || now;
+                    } else if (e.attemptCount > 0) {
+                        e.state = "retry_allowed";
+                    } else {
+                        e.state = "released";
+                        e.usedByMachine = null;
+                    }
                     e.releasedAt = now;
                 }
             }
