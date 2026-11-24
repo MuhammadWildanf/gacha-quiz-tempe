@@ -31,18 +31,35 @@ async function registerAll() {
 
     console.log(`\n⏳ Mendaftarkan total ${client.deviceList.length} device sekaligus ke vendor...\n`);
 
+    const berhasil = [];
+    const gagal = [];
+
     for (let i = 0; i < client.deviceList.length; i++) {
         const sn = client.deviceList[i];
         console.log(`[${i + 1}/${client.deviceList.length}] Mengirim request pendaftaran untuk: ${sn}`);
         const res = await client.requestDevice(sn);
         console.log(`       Status Response: ${res.status} (${res.message || res.message_en || "OK"})`);
         console.log(`       Device Status  : ${client.devices[sn]?.status || "PENDING"}\n`);
+
+        if (res.status === 200 || res.status === 201) {
+            berhasil.push(sn);
+        } else {
+            gagal.push({ sn, alasan: res.message || res.message_en || `HTTP ${res.status}` });
+        }
     }
 
     console.log("==========================================");
-    console.log("✅ PENDAFTARAN SELESAI!");
-    console.log("Silakan kabari vendor agar mengaktifkan (ACTIVE) nomor seri tersebut:");
-    console.log(`👉 ${client.deviceList.join(", ")}`);
+    console.log(`✅ PENDAFTARAN SELESAI: ${berhasil.length} berhasil, ${gagal.length} gagal`);
+    if (berhasil.length > 0) {
+        console.log("Silakan kabari vendor agar mengaktifkan (ACTIVE) nomor seri berikut:");
+        console.log(`👉 ${berhasil.join(", ")}`);
+    }
+    if (gagal.length > 0) {
+        console.log("❌ Device yang gagal didaftarkan:");
+        for (const g of gagal) {
+            console.log(`   - ${g.sn}: ${g.alasan}`);
+        }
+    }
     console.log("==========================================");
 }
 
