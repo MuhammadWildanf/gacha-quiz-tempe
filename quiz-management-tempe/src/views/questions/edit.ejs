@@ -226,6 +226,11 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="questionEn" class="form-label">Question Text (English, optional)</label>
+                        <input type="text" id="questionEn" name="questionEn" class="form-input" value="<%= question.questionEn || '' %>" placeholder="English translation">
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Question Image (Optional)</label>
                         <div class="file-upload-wrapper">
                             <input type="file" name="image" class="file-upload-input" accept="image/*" id="imageInput">
@@ -267,6 +272,7 @@
                         for (let i = 0; i < 4; i++) {
                             const ans = ansList[i];
                             const val = ans ? ans.answerText : '';
+                            const valEn = ans && ans.answerTextEn ? ans.answerTextEn : '';
                             const isReq = (i < 2);
                             const isChecked = (correctIdx === i);
                         %>
@@ -288,6 +294,14 @@
                                         class="form-input" 
                                         value="<%= val %>" 
                                         placeholder="Choice <%= bullets[i] %> <%= isReq ? '(Required)' : '(Optional)' %>"
+                                    >
+                                    <input
+                                        type="text"
+                                        name="answerEn<%= i + 1 %>"
+                                        class="form-input"
+                                        value="<%= valEn %>"
+                                        placeholder="Choice <%= bullets[i] %> (English, optional)"
+                                        style="margin-top: 8px;"
                                     >
                                 </div>
                             </div>

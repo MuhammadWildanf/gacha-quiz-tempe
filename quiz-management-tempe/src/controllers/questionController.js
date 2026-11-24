@@ -2,6 +2,8 @@ const prisma = require('../config/database');
 const path = require('path');
 const fs = require('fs');
 
+const cleanText = (value) => (typeof value === 'string' && value.trim()) ? value.trim() : null;
+
 // List Questions for a Quiz
 const getQuestions = async (req, res) => {
     const { quizId } = req.params;
@@ -59,7 +61,7 @@ const getCreateQuestion = async (req, res) => {
 // Save New Question + Answers
 const postCreateQuestion = async (req, res) => {
     const { quizId } = req.params;
-    const { question, categoryId, answer1, answer2, answer3, answer4, correctAnswer, timer } = req.body;
+    const { question, questionEn, categoryId, answer1, answer2, answer3, answer4, correctAnswer, timer } = req.body;
     let imagePath = null;
 
     if (req.file) {
@@ -104,6 +106,7 @@ const postCreateQuestion = async (req, res) => {
                 quizId: parseInt(quizId),
                 categoryId: categoryId ? parseInt(categoryId) : null,
                 question: question.trim(),
+                questionEn: cleanText(questionEn),
                 image: imagePath,
                 timer: parseInt(timer) || 15
             }
@@ -120,6 +123,7 @@ const postCreateQuestion = async (req, res) => {
             return {
                 questionId: newQuestion.id,
                 answerText: item.text,
+                answerTextEn: cleanText(req.body[`answerEn${item.idx + 1}`]),
                 isCorrect
             };
         });
@@ -165,7 +169,7 @@ const getEditQuestion = async (req, res) => {
 // Update Question + Answers
 const postEditQuestion = async (req, res) => {
     const { quizId, id } = req.params;
-    const { question, categoryId, answer1, answer2, answer3, answer4, correctAnswer, timer, removeImage } = req.body;
+    const { question, questionEn, categoryId, answer1, answer2, answer3, answer4, correctAnswer, timer, removeImage } = req.body;
 
     try {
         const quiz = await prisma.quiz.findUnique({ where: { id: parseInt(quizId) } });
@@ -216,6 +220,7 @@ const postEditQuestion = async (req, res) => {
             where: { id: parseInt(id) },
             data: {
                 question: finalQuestionText,
+                questionEn: cleanText(questionEn),
                 categoryId: finalCategoryId,
                 image: imagePath,
                 timer: finalTimer
@@ -244,6 +249,7 @@ const postEditQuestion = async (req, res) => {
                 return {
                     questionId: parseInt(id),
                     answerText: item.text,
+                    answerTextEn: cleanText(req.body[`answerEn${item.idx + 1}`]),
                     isCorrect
                 };
             });
