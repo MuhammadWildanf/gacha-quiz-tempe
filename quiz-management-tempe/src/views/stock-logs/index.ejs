@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Stok - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; }
+        .filter-bar label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-muted); }
+        .filter-bar select, .filter-bar input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.03); color: var(--text-main); min-width: 160px; }
+        .filter-bar button { width: auto; padding: 9px 20px; }
+        .mono { font-family: monospace; font-size: 13px; color: var(--accent-cyan); }
+        .delta-down { color: var(--accent-pink); }
+        .delta-up { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <%- include('../partials/sidebar', { activePath: 'stock-logs' }) %>
+
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Log Stok</h1>
+                </div>
+            </header>
+
+            <form class="filter-bar" method="GET" action="/admin/stock-logs">
+                <label>Mesin
+                    <select name="machineId">
+                        <option value="">Semua mesin</option>
+                        <% machines.forEach(m => { %>
+                            <option value="<%= m %>" <%= filters.machineId === m ? 'selected' : '' %>><%= m %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>User
+                    <select name="username">
+                        <option value="">Semua user</option>
+                        <% users.forEach(u => { %>
+                            <option value="<%= u %>" <%= filters.username === u ? 'selected' : '' %>><%= u %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>Dari tanggal
+                    <input type="date" name="from" value="<%= filters.from %>">
+                </label>
+                <label>Sampai tanggal
+                    <input type="date" name="to" value="<%= filters.to %>">
+                </label>
+                <button type="submit" class="btn">Filter</button>
+                <a href="/admin/stock-logs" class="btn" style="width:auto; padding: 9px 20px; text-decoration:none;">Reset</a>
+            </form>
+
+            <div class="table-card">
+                <% if (logs.length > 0) { %>
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Mesin</th>
+                                <th>User</th>
+                                <th>Aksi</th>
+                                <th class="text-center">Lama</th>
+                                <th class="text-center">Baru</th>
+                                <th class="text-center">Selisih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% logs.forEach(l => { %>
+                                <% const diff = l.oldValue === null ? null : l.newValue - l.oldValue; %>
+                                <tr>
+                                    <td style="color: var(--text-muted);"><%= new Date(l.createdAt).toLocaleString('id-ID') %></td>
+                                    <td class="mono"><%= l.machineId %></td>
+                                    <td style="font-weight: 600;"><%= l.username %></td>
+                                    <td><%= l.action === 'MANUAL_REFILL' ? 'Isi ulang' : 'Set manual' %></td>
+                                    <td class="text-center"><%= l.oldValue ?? '-' %></td>
+                                    <td class="text-center"><%= l.newValue %></td>
+                                    <td class="text-center <%= diff > 0 ? 'delta-up' : (diff < 0 ? 'delta-down' : '') %>">
+                                        <%= diff === null ? '-' : (diff > 0 ? '+' + diff : diff) %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <div class="no-data">Belum ada log stok untuk filter ini.</div>
+                <% } %>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

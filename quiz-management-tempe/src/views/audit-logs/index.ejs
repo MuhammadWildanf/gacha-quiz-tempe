@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; }
+        .filter-bar label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-muted); }
+        .filter-bar select, .filter-bar input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.03); color: var(--text-main); min-width: 160px; }
+        .filter-bar button { width: auto; padding: 9px 20px; }
+        .mono { font-family: monospace; font-size: 13px; color: var(--accent-cyan); }
+        .detail { font-size: 13px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <%- include('../partials/sidebar', { activePath: 'audit-logs' }) %>
+
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Audit Log</h1>
+                </div>
+            </header>
+
+            <form class="filter-bar" method="GET" action="/admin/audit-logs">
+                <label>Aksi
+                    <select name="action">
+                        <option value="">Semua aksi</option>
+                        <% actions.forEach(a => { %>
+                            <option value="<%= a %>" <%= filters.action === a ? 'selected' : '' %>><%= a %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>Dilakukan oleh
+                    <select name="actor">
+                        <option value="">Semua user</option>
+                        <% actors.forEach(a => { %>
+                            <option value="<%= a %>" <%= filters.actor === a ? 'selected' : '' %>><%= a %></option>
+                        <% }) %>
+                    </select>
+                </label>
+                <label>Dari tanggal
+                    <input type="date" name="from" value="<%= filters.from %>">
+                </label>
+                <label>Sampai tanggal
+                    <input type="date" name="to" value="<%= filters.to %>">
+                </label>
+                <button type="submit" class="btn">Filter</button>
+                <a href="/admin/audit-logs" class="btn" style="width:auto; padding: 9px 20px; text-decoration:none;">Reset</a>
+            </form>
+
+            <div class="table-card">
+                <% if (logs.length > 0) { %>
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Dilakukan oleh</th>
+                                <th>Aksi</th>
+                                <th>Target</th>
+                                <th>Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% logs.forEach(l => { %>
+                                <tr>
+                                    <td style="color: var(--text-muted);"><%= new Date(l.createdAt).toLocaleString('id-ID') %></td>
+                                    <td style="font-weight: 600;"><%= l.actorName %></td>
+                                    <td class="mono"><%= l.action %></td>
+                                    <td class="mono"><%= l.target %></td>
+                                    <td class="detail"><%= l.detailText %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <div class="no-data">Belum ada perubahan tercatat untuk filter ini.</div>
+                <% } %>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

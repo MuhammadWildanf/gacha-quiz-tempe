@@ -22,6 +22,8 @@ const PORT = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 6553
 
 const VendorClient = require("./vendor-client");
 const settings = require("./settings");
+const gameConfig = require("./game-config");
+const { requirePermission } = require("./auth");
 const { loadLedger, saveLedger, checkWritable, LEDGER_FILE } = require("./ledger");
 const { renderDashboard } = require("./views/dashboard");
 
@@ -127,7 +129,7 @@ function buildScanSuccess(entry, qrCode, now, resumed, message) {
         maxAttempts: entry.maxAttempts,
         attemptsRemaining: Math.max(0, entry.maxAttempts - entry.attemptCount),
         // Dikirim supaya Unity bisa menyamakan tampilan/log dengan aturan server.
-        winMinPercentage: settings.get().winMinPercentage
+        minimumScoreToWin: gameConfig.get().minimumScoreToWin
     };
 }
 
@@ -386,7 +388,7 @@ wss.on("connection", (ws) => {
                     attemptCount: existing.attemptCount,
                     maxAttempts: existing.maxAttempts,
                     attemptsRemaining: Math.max(0, existing.maxAttempts - existing.attemptCount),
-                    winMinPercentage: settings.get().winMinPercentage
+                    minimumScoreToWin: gameConfig.get().minimumScoreToWin
                 }));
 
                 broadcast({
@@ -499,7 +501,7 @@ wss.on("connection", (ws) => {
                 }
 
                 const pct = (score / maxScore) * 100;
-                const finalWin = pct >= settings.get().winMinPercentage;
+                const finalWin = score >= gameConfig.get().minimumScoreToWin;
                 const prizeTier = finalWin
                     ? (String(data.prizeTier || "").trim() || WIN_PRIZE_DEFAULT)
                     : "";
@@ -765,13 +767,36 @@ app.post("/api/tickets/allow", (req, res) => {
 // Aturan main & threshold (dinamis dari settings.js)
 app.get("/api/config", (req, res) => {
     const cfg = settings.get();
+    const game = gameConfig.get();
     res.json({
         success: true,
         version: APP_VERSION,
-        winMinPercentage: cfg.winMinPercentage,
+        minimumScoreToWin: game.minimumScoreToWin,
+        pointsPerCorrect: game.pointsPerCorrect,
+        maxQuestions: game.maxQuestions,
         winPrizeDefault: WIN_PRIZE_DEFAULT,
         maxGameAttempts: cfg.maxGameAttempts
     });
+});
+
+// Konfigurasi permainan global (diatur dari panel Unity oleh admin).
+app.get("/api/game-config", (req, res) => {
+    res.json({ success: true, data: gameConfig.get(), limits: gameConfig.limits });
+});
+
+app.post("/api/game-config", requirePermission("machine.config"), (req, res) => {
+    try {
+        const { config, warning } = gameConfig.update({
+            pointsPerCorrect: req.body?.pointsPerCorrect,
+            maxQuestions: req.body?.maxQuestions,
+            minimumScoreToWin: req.body?.minimumScoreToWin
+        });
+        console.log(`🎯 [GAME-CONFIG] oleh ${req.authUser.username}: poin/benar=${config.pointsPerCorrect}, ` +
+            `max soal=${config.maxQuestions}, menang>=${config.minimumScoreToWin} poin.`);
+        res.json({ success: true, message: "Konfigurasi permainan disimpan.", data: config, warning });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
 });
 
 // Pengaturan runtime (dipakai dashboard / operator)
@@ -782,11 +807,10 @@ app.get("/api/settings", (req, res) => {
 app.post("/api/settings", (req, res) => {
     try {
         const updated = settings.update({
-            maxGameAttempts: req.body?.maxGameAttempts,
-            winMinPercentage: req.body?.winMinPercentage
+            maxGameAttempts: req.body?.maxGameAttempts
         });
         const synced = applyMaxAttemptsToActiveTickets(updated.maxGameAttempts);
-        console.log(`⚙️ [SETTINGS] maxAttempts=${updated.maxGameAttempts}, winMin=${updated.winMinPercentage}%` +
+        console.log(`⚙️ [SETTINGS] maxAttempts=${updated.maxGameAttempts}` +
             (synced > 0 ? `, ${synced} tiket aktif disesuaikan.` : "."));
         res.json({ success: true, message: "Pengaturan disimpan.", data: updated, syncedTickets: synced });
     } catch (err) {
@@ -798,11 +822,10 @@ app.post("/api/settings", (req, res) => {
 app.post("/settings", (req, res) => {
     try {
         const updated = settings.update({
-            maxGameAttempts: req.body?.maxGameAttempts,
-            winMinPercentage: req.body?.winMinPercentage
+            maxGameAttempts: req.body?.maxGameAttempts
         });
         const synced = applyMaxAttemptsToActiveTickets(updated.maxGameAttempts);
-        console.log(`⚙️ [SETTINGS] maxAttempts=${updated.maxGameAttempts}, winMin=${updated.winMinPercentage}%` +
+        console.log(`⚙️ [SETTINGS] maxAttempts=${updated.maxGameAttempts}` +
             (synced > 0 ? `, ${synced} tiket aktif disesuaikan.` : "."));
         res.redirect("/?saved=1");
     } catch (err) {
@@ -922,7 +945,7 @@ server.listen(PORT, async () => {
     console.log(`API Ledger      : http://localhost:${PORT}/api/ledger`);
     console.log(`API Results     : http://localhost:${PORT}/api/results (untuk platform dispenser)`);
     const cfg = settings.get();
-    console.log(`API Config      : http://localhost:${PORT}/api/config (threshold menang ${cfg.winMinPercentage}%, max attempt ${cfg.maxGameAttempts}x)`);
+    console.log(`API Config      : http://localhost:${PORT}/api/config (menang >= ${gameConfig.get().minimumScoreToWin} poin, max attempt ${cfg.maxGameAttempts}x)`);
     console.log(`API Settings    : http://localhost:${PORT}/api/settings (GET/POST, ubah dari dashboard)`);
     console.log(`Data ledger     : ${LEDGER_FILE}`);
     console.log(`Data settings   : ${settings.file}`);

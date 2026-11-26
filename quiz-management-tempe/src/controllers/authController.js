@@ -1,13 +1,17 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
+const { SECRET } = require('../middleware/authMiddleware');
+const loginAttempts = require('../services/loginAttempts');
+
+const TOKEN_TTL = '7d';
 
 // Render Login Page
 const getLogin = (req, res) => {
     // If user is already logged in, redirect to dashboard
     if (req.cookies.token) {
         try {
-            jwt.verify(req.cookies.token, process.env.JWT_SECRET || 'supersecretkey123');
+            jwt.verify(req.cookies.token, SECRET);
             return res.redirect('/admin/dashboard');
         } catch (e) {
             res.clearCookie('token');
@@ -18,35 +22,35 @@ const getLogin = (req, res) => {
 
 // Handle Post Login
 const postLogin = async (req, res) => {
-    const { email, password } = req.body;
+    const username = String(req.body.username || '').trim().toLowerCase();
+    const { password } = req.body;
 
     try {
-        if (!email || !password) {
-            return res.render('login', { error: 'Please provide email and password' });
+        if (!username || !password) {
+            return res.render('login', { error: 'Please provide username and password' });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email }
-        });
-
-        if (!user) {
-            return res.render('login', { error: 'Invalid email or password' });
+        if (loginAttempts.isLocked(username)) {
+            return res.render('login', { error: 'Too many failed attempts. Try again in a few minutes.' });
         }
 
-        // Compare password
-        const isMatch = await bcrypt.compare(password, user.password);
+        const user = await prisma.user.findUnique({ where: { username } });
+        const isMatch = user && user.isActive && await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
-            return res.render('login', { error: 'Invalid email or password' });
+            loginAttempts.recordFailure(username);
+            return res.render('login', { error: 'Invalid username or password' });
         }
 
-        // Generate JWT token
+        loginAttempts.recordSuccess(username);
+        await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || 'supersecretkey123',
-            { expiresIn: '7d' }
+            { id: user.id, username: user.username, role: user.role },
+            SECRET,
+            { expiresIn: TOKEN_TTL }
         );
 
-        // Set HttpOnly cookie
         res.cookie('token', token, {
             httpOnly: true,
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days

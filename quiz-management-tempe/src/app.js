@@ -11,6 +11,12 @@ const questionRoutes = require('./routes/questionRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 const { adminRouter: gachaAdminRoutes, apiRouter: gachaApiRoutes } = require('./routes/gachaRoutes');
 const { adminRouter: boothAdminRoutes, apiRouter: boothApiRoutes } = require('./routes/boothRoutes');
+const userRoutes = require('./routes/userRoutes');
+const roleRoutes = require('./routes/roleRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const { adminRouter: stockLogAdminRoutes, apiRouter: stockLogApiRoutes } = require('./routes/stockLogRoutes');
+const authApiRoutes = require('./routes/authApiRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 const app = express();
 
@@ -32,7 +38,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Configure Express Session (useful for flash messages or session states if needed)
 app.use(session({
-    secret: process.env.JWT_SECRET || 'supersecretkey123',
+    secret: require('./middleware/authMiddleware').SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { 
@@ -48,9 +54,16 @@ app.use('/admin/quizzes', quizRoutes);
 app.use('/admin/quizzes', questionRoutes); // Connect question endpoints under /admin/quizzes
 app.use('/admin', gachaAdminRoutes);
 app.use('/admin', boothAdminRoutes);
+app.use('/admin', userRoutes);
+app.use('/admin', roleRoutes);
+app.use('/admin', categoryRoutes);
+app.use('/admin', stockLogAdminRoutes);
+app.use('/admin', auditRoutes);
 app.use('/api', apiRoutes);
 app.use('/api', gachaApiRoutes);
 app.use('/api', boothApiRoutes);
+app.use('/api', authApiRoutes);
+app.use('/api', stockLogApiRoutes);
 
 // Home route redirects to admin dashboard (which will redirect to login if not authenticated)
 app.get('/', (req, res) => {

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('./src/config/database'); // Sesuaikan path ini dengan project-mu
+const { DEFAULT_ROLES } = require('./src/config/permissions');
 
 const defaultQuestions = [
     // --- Immersive Room ---
@@ -508,15 +509,30 @@ const defaultQuestions = [
 async function main() {
     const password = await bcrypt.hash('admin123', 10);
 
-    // 1. Create Admin if not exists
+    // 1. Roles default (izin hanya dibuat saat role baru; perubahan dari menu Roles tidak ditimpa)
+    for (const [name, def] of Object.entries(DEFAULT_ROLES)) {
+        const existingRole = await prisma.role.findUnique({ where: { name } });
+        if (existingRole) continue;
+        await prisma.role.create({
+            data: {
+                name,
+                description: def.description,
+                permissions: { create: def.permissions.map(permission => ({ permission })) }
+            }
+        });
+        console.log(`Role "${name}" created`);
+    }
+
+    // 2. Create Admin if not exists (atau beri username jika akun lama masih pakai email saja)
     const existingAdmin = await prisma.user.findFirst({
-        where: { email: 'admin@mail.com' }
+        where: { OR: [{ username: 'admin' }, { email: 'admin@mail.com' }] }
     });
 
     if (!existingAdmin) {
         await prisma.user.create({
             data: {
                 name: 'Administrator',
+                username: 'admin',
                 email: 'admin@mail.com',
                 password,
                 role: 'admin'
@@ -524,7 +540,7 @@ async function main() {
         });
         console.log('Admin created successfully');
     } else {
-        console.log('Admin already exists');
+        console.log('Admin already exists (tidak diubah)');
     }
 
     // 2. Find or Create the Tempe Park Quiz
@@ -543,16 +559,16 @@ async function main() {
             }
         });
         console.log('Quiz "Tempe Park - Tempe Gacha" created successfully');
-    } else {
-        // Update versi bahasa Inggris jika quiz sudah ada
+    } else if (!quiz.titleEn || !quiz.descriptionEn) {
+        // Isi terjemahan Inggris hanya yang masih kosong; yang sudah diubah admin tidak ditimpa.
         quiz = await prisma.quiz.update({
             where: { id: quiz.id },
             data: {
-                titleEn: "Tempe Park - Tempe Gacha",
-                descriptionEn: "Answer the Quiz, Claim Your Gacha!"
+                titleEn: quiz.titleEn || "Tempe Park - Tempe Gacha",
+                descriptionEn: quiz.descriptionEn || "Answer the Quiz, Claim Your Gacha!"
             }
         });
-        console.log('Quiz "Tempe Park - Tempe Gacha" updated with English translation');
+        console.log('Quiz "Tempe Park - Tempe Gacha": terjemahan Inggris yang kosong diisi');
     }
 
     // 3. Ekstrak unik kategori beserta versi Inggrisnya
@@ -575,7 +591,7 @@ async function main() {
                 data: { name: name, nameEn: nameEn }
             });
             console.log(`Category "${name}" created successfully`);
-        } else {
+        } else if (!category.nameEn) {
             category = await prisma.category.update({
                 where: { id: category.id },
                 data: { nameEn: nameEn }
@@ -620,8 +636,8 @@ async function main() {
             });
 
             addedQuestionsCount++;
-        } else {
-            // Update terjemahan Inggris untuk soal & jawaban yang sudah ada
+        } else if (!existingQuestion.questionEn) {
+            // Isi terjemahan Inggris yang masih kosong saja.
             await prisma.question.update({
                 where: { id: existingQuestion.id },
                 data: { questionEn: qData.questionEn }
@@ -631,7 +647,8 @@ async function main() {
                 await prisma.answer.updateMany({
                     where: {
                         questionId: existingQuestion.id,
-                        answerText: ans.answerText
+                        answerText: ans.answerText,
+                        answerTextEn: null
                     },
                     data: {
                         answerTextEn: ans.answerTextEn
@@ -651,32 +668,21 @@ async function main() {
         console.log('All default categorized questions are already present in the database.');
     }
 
-    // 6. Create default GachaSetting if not exists
-    const existingSetting = await prisma.gachaSetting.findUnique({ where: { id: 1 } });
-    if (!existingSetting) {
-        await prisma.gachaSetting.create({
-            data: { id: 1, minCorrectAnswers: 3 }
-        });
-        console.log('Default gacha setting created (minCorrectAnswers: 3)');
-    } else {
-        console.log('Gacha setting already exists');
-    }
-
-    // 7. Create default booths if not exists
-    const defaultBooths = [
-        { name: 'Booth 1', description: 'Booth kuis utama' },
-        { name: 'Booth 2', description: 'Booth kuis kedua' },
-        { name: 'Booth 3', description: 'Booth kuis ketiga' }
-    ];
-
-    for (const boothData of defaultBooths) {
-        const existingBooth = await prisma.booth.findFirst({ where: { name: boothData.name } });
-        if (!existingBooth) {
+    // 6. Booth awal hanya dibuat saat database belum punya booth sama sekali.
+    //    Kalau admin sudah menghapus/mengubah booth, seed tidak membuatnya lagi.
+    const boothCount = await prisma.booth.count();
+    if (boothCount === 0) {
+        const defaultBooths = [
+            { name: 'Booth 1', description: 'Booth kuis utama' },
+            { name: 'Booth 2', description: 'Booth kuis kedua' },
+            { name: 'Booth 3', description: 'Booth kuis ketiga' }
+        ];
+        for (const boothData of defaultBooths) {
             await prisma.booth.create({ data: boothData });
             console.log(`Booth "${boothData.name}" created successfully`);
-        } else {
-            console.log(`Booth "${boothData.name}" already exists`);
         }
+    } else {
+        console.log(`Booth sudah ada (${boothCount}), tidak diubah.`);
     }
 }
 

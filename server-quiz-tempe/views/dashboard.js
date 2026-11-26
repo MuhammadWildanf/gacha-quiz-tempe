@@ -64,7 +64,7 @@ function renderRows(ledger) {
  * @param {object} data
  * @param {Array}  data.ledger
  * @param {number} data.totalMachines
- * @param {{maxGameAttempts:number, winMinPercentage:number}} data.settings
+ * @param {{maxGameAttempts:number}} data.settings
  * @param {string} data.scanMode
  * @param {string} data.winPrizeDefault
  * @param {boolean} data.saved
@@ -137,10 +137,6 @@ function renderDashboard({ ledger, totalMachines, settings, scanMode, winPrizeDe
                     Kesempatan bermain (attempt)
                     <input type="number" name="maxGameAttempts" min="1" max="50" step="1" value="${esc(settings.maxGameAttempts)}" required>
                 </label>
-                <label>
-                    Ambang menang (%)
-                    <input type="number" name="winMinPercentage" min="0" max="100" step="1" value="${esc(settings.winMinPercentage)}" required>
-                </label>
                 <button type="submit">Simpan Pengaturan</button>
             </form>
             <p class="hint">Berlaku langsung tanpa restart. Tiket yang belum selesai ikut menyesuaikan jumlah kesempatan. Hadiah menang default: <b>${esc(winPrizeDefault)}</b>.</p>
@@ -188,7 +184,6 @@ function renderDashboard({ ledger, totalMachines, settings, scanMode, winPrizeDe
         <p class="note">
             🔄 Auto-refresh tiap 10 detik (berhenti saat form sedang diisi).
             Maksimal kesempatan: <b>${esc(settings.maxGameAttempts)}x</b>.
-            Ambang menang: <b>${esc(settings.winMinPercentage)}%</b>.
             Pengaturan tersimpan di <code>settings_local.json</code>.
         </p>
 

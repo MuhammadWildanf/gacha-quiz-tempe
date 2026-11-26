@@ -2,11 +2,6 @@ const prisma = require('../config/database');
 
 const getSettings = async (req, res) => {
     try {
-        let setting = await prisma.gachaSetting.findUnique({ where: { id: 1 } });
-        if (!setting) {
-            setting = await prisma.gachaSetting.create({ data: { id: 1, minCorrectAnswers: 3 } });
-        }
-
         const logs = await prisma.gachaLog.findMany({
             orderBy: { createdAt: 'desc' },
             take: 20,
@@ -14,50 +9,12 @@ const getSettings = async (req, res) => {
         });
 
         res.render('gacha/settings', {
-            setting,
             logs,
-            path: 'gacha',
-            success: req.query.success || null
+            path: 'gacha'
         });
     } catch (error) {
         console.error('getSettings error:', error);
         res.status(500).send('Internal Server Error');
-    }
-};
-
-const postSettings = async (req, res) => {
-    const { minCorrectAnswers } = req.body;
-
-    try {
-        const value = parseInt(minCorrectAnswers);
-        if (isNaN(value) || value < 1) {
-            return res.redirect('/admin/gacha?error=invalid');
-        }
-
-        await prisma.gachaSetting.upsert({
-            where: { id: 1 },
-            update: { minCorrectAnswers: value },
-            create: { id: 1, minCorrectAnswers: value }
-        });
-
-        res.redirect('/admin/gacha?success=1');
-    } catch (error) {
-        console.error('postSettings error:', error);
-        res.status(500).send('Internal Server Error');
-    }
-};
-
-const getApiSettings = async (req, res) => {
-    try {
-        let setting = await prisma.gachaSetting.findUnique({ where: { id: 1 } });
-        if (!setting) {
-            setting = await prisma.gachaSetting.create({ data: { id: 1, minCorrectAnswers: 3 } });
-        }
-
-        res.json({ minCorrectAnswers: setting.minCorrectAnswers });
-    } catch (error) {
-        console.error('getApiSettings error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -105,7 +62,5 @@ const postLog = async (req, res) => {
 
 module.exports = {
     getSettings,
-    postSettings,
-    getApiSettings,
     postLog
 };

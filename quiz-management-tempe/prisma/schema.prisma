@@ -8,11 +8,45 @@ datasource db {
 }
 
 model User {
+  id          Int       @id @default(autoincrement())
+  name        String
+  username    String    @unique
+  email       String?   @unique
+  password    String
+  role        String    @default("operator")
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  stockLogs   StockLog[]
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+}
+
+model RolePermission {
+  id         Int    @id @default(autoincrement())
+  roleId     Int
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String
+
+  @@unique([roleId, permission])
+}
+
+model StockLog {
   id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("admin")
+  machineId String
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  username  String
+  action    String
+  oldValue  Int?
+  newValue  Int
   createdAt DateTime @default(now())
 }
 
@@ -74,10 +108,14 @@ model Answer {
   createdAt   DateTime   @default(now())
 }
 
-model GachaSetting {
-  id                Int      @id @default(1)
-  minCorrectAnswers Int      @default(3)
-  updatedAt         DateTime @updatedAt
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actorId   Int?
+  actorName String
+  action    String
+  target    String
+  detail    String?
+  createdAt DateTime @default(now())
 }
 
 model Booth {

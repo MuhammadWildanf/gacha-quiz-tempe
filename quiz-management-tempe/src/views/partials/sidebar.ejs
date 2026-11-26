@@ -1,0 +1,91 @@
+<%
+    const currentPath = typeof activePath !== 'undefined' ? activePath : (typeof path !== 'undefined' ? path : '');
+    const hasPerm = (key) => typeof can === 'function' && can(key);
+%>
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        Quiz<span>Manager</span>
+    </div>
+
+    <ul class="sidebar-menu">
+        <% if (hasPerm('dashboard.view')) { %>
+        <li>
+            <a href="/admin/dashboard" class="sidebar-link <%= currentPath === 'dashboard' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('quiz.manage')) { %>
+        <li>
+            <a href="/admin/quizzes" class="sidebar-link <%= currentPath === 'quizzes' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span>Quizzes</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('category.manage')) { %>
+        <li>
+            <a href="/admin/categories" class="sidebar-link <%= currentPath === 'categories' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                <span>Categories</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('gacha.settings')) { %>
+        <li>
+            <a href="/admin/gacha" class="sidebar-link <%= currentPath === 'gacha' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                <span>Gacha Settings</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('booth.manage')) { %>
+        <li>
+            <a href="/admin/booths" class="sidebar-link <%= currentPath === 'booths' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                <span>Booths</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('stocklog.view')) { %>
+        <li>
+            <a href="/admin/stock-logs" class="sidebar-link <%= currentPath === 'stock-logs' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>Stock Logs</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('user.manage')) { %>
+        <li>
+            <a href="/admin/users" class="sidebar-link <%= currentPath === 'users' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span>Users</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('audit.view')) { %>
+        <li>
+            <a href="/admin/audit-logs" class="sidebar-link <%= currentPath === 'audit-logs' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+                <span>Audit Log</span>
+            </a>
+        </li>
+        <% } %>
+        <% if (hasPerm('role.manage')) { %>
+        <li>
+            <a href="/admin/roles" class="sidebar-link <%= currentPath === 'roles' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Roles</span>
+            </a>
+        </li>
+        <% } %>
+    </ul>
+
+    <div class="sidebar-footer">
+        <a href="/auth/logout" class="sidebar-link" style="color: #ff007f;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Logout</span>
+        </a>
+    </div>
+</aside>

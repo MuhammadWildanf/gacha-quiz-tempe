@@ -3,10 +3,10 @@
  *
  * Urutan prioritas:
  *   1. settings_local.json  (hasil simpan dari dashboard — paling tinggi)
- *   2. .env                 (MAX_GAME_ATTEMPTS / WIN_MIN_PERCENTAGE — nilai awal)
- *   3. default kode         (3x main, menang >= 80%)
+ *   2. .env                 (MAX_GAME_ATTEMPTS — nilai awal)
+ *   3. default kode         (3x main)
  *
- * File JSON sengaja dipakai agar operator bisa mengubah tanpa build ulang.
+ * Soal, poin, dan ambang menang TIDAK di sini — lihat game-config.js (dari Unity).
  */
 const fs = require("fs");
 const path = require("path");
@@ -18,8 +18,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const SETTINGS_FILE = path.join(DATA_DIR, "settings_local.json");
 
 const LIMITS = {
-    maxGameAttempts: { min: 1, max: 50 },
-    winMinPercentage: { min: 0, max: 100 }
+    maxGameAttempts: { min: 1, max: 50 }
 };
 
 function toInt(value, fallback) {
@@ -33,8 +32,7 @@ function clamp(value, { min, max }) {
 
 function createSettingsStore(envDefaults = {}) {
     const current = {
-        maxGameAttempts: clamp(toInt(envDefaults.maxGameAttempts, 3), LIMITS.maxGameAttempts),
-        winMinPercentage: clamp(toInt(envDefaults.winMinPercentage, 80), LIMITS.winMinPercentage)
+        maxGameAttempts: clamp(toInt(envDefaults.maxGameAttempts, 3), LIMITS.maxGameAttempts)
     };
 
     function load() {
@@ -43,9 +41,6 @@ function createSettingsStore(envDefaults = {}) {
             const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
             if (raw.maxGameAttempts !== undefined) {
                 current.maxGameAttempts = clamp(toInt(raw.maxGameAttempts, current.maxGameAttempts), LIMITS.maxGameAttempts);
-            }
-            if (raw.winMinPercentage !== undefined) {
-                current.winMinPercentage = clamp(toInt(raw.winMinPercentage, current.winMinPercentage), LIMITS.winMinPercentage);
             }
         } catch (err) {
             console.error(`⚠️ [SETTINGS] Gagal membaca ${path.basename(SETTINGS_FILE)}: ${err.message}. Memakai nilai default.`);
@@ -84,14 +79,6 @@ function createSettingsStore(envDefaults = {}) {
             next.maxGameAttempts = n;
         }
 
-        if (patch.winMinPercentage !== undefined && patch.winMinPercentage !== "") {
-            const n = Number(patch.winMinPercentage);
-            if (!Number.isFinite(n) || n < LIMITS.winMinPercentage.min || n > LIMITS.winMinPercentage.max) {
-                throw new Error(`Ambang menang harus angka ${LIMITS.winMinPercentage.min}-${LIMITS.winMinPercentage.max}.`);
-            }
-            next.winMinPercentage = Math.round(n * 100) / 100;
-        }
-
         Object.assign(current, next);
         save();
         return get();
@@ -103,8 +90,7 @@ function createSettingsStore(envDefaults = {}) {
 }
 
 module.exports = createSettingsStore({
-    maxGameAttempts: process.env.MAX_GAME_ATTEMPTS,
-    winMinPercentage: process.env.WIN_MIN_PERCENTAGE
+    maxGameAttempts: process.env.MAX_GAME_ATTEMPTS
 });
 module.exports.createSettingsStore = createSettingsStore;
 module.exports.SETTINGS_FILE = SETTINGS_FILE;

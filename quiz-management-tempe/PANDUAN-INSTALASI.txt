@@ -27,23 +27,31 @@ JANGAN sertakan node_modules/ (besar, install ulang saja).
 
 Contoh .env yang benar:
   DATABASE_URL="file:./dev.db"
-  JWT_SECRET="supersecretkey123"
+  JWT_SECRET="isi-dengan-string-acak-panjang"
   PORT=3011
 
+JWT_SECRET WAJIB diisi dengan string acak yang panjang (minimal 32 karakter).
+Jangan pakai contoh dari dokumen ini. Server tidak mau jalan kalau JWT_SECRET kosong.
+Nilai JWT_SECRET di sini HARUS sama dengan JWT_SECRET di .env server-quiz-tempe
+(server Gacha), karena token login dibuat di sini dan diperiksa di sana.
+
 3. LANGKAH INSTALASI
--------------------
+--------------------
 a. Extract rar ke folder, misal:
-   E:\web\2026\quiz-management-tempe
+   E:\web\2026\tempe-park\Gacha\quiz-management-tempe
 
 b. Buka terminal (PowerShell) di folder itu, lalu:
 
    npm install
    npx prisma generate
+   npx prisma migrate deploy
 
    Keterangan:
    - npm install = install ulang node_modules
    - prisma generate = build ulang Prisma Client sesuai OS baru
      (tidak menghapus data, wajib dijalankan)
+   - prisma migrate deploy = terapkan migrasi yang belum ada di dev.db
+     (tidak menghapus data)
 
 c. Jalankan server:
 
@@ -56,25 +64,55 @@ c. Jalankan server:
 d. Buka browser:
    http://localhost:3011
 
-e. Login default (dari seed.js):
-   email    : admin@mail.com
+e. Login pertama kali (akun admin dari seed.js):
+   username : admin
    password : admin123
+   Segera ganti password lewat menu Users setelah login pertama.
 
-4. YANG JANGAN DILAKUKAN (BIAR DATA TIDAK HILANG)
+4. AKUN, ROLE, DAN IZIN
+-----------------------
+Ada dua role bawaan:
+
+- admin    : semua menu dan semua izin. Tidak bisa dibatasi.
+- operator : hanya menu Quiz dan Kategori, serta ubah stok dari Unity.
+
+Menu yang hanya untuk admin:
+- Dashboard
+- Gacha Settings (hanya info, nilai aturan permainan diatur dari panel Unity)
+- Booths
+- Stock Logs (riwayat perubahan stok ketiga mesin)
+- Users (tambah, ubah, hapus user; nonaktifkan akun)
+- Roles (atur izin tiap role; role admin dikunci)
+- Audit Log (riwayat perubahan user dan role: siapa, kapan, apa yang berubah)
+
+Pengaman:
+- Akun sendiri tidak bisa dihapus, dinonaktifkan, atau diturunkan rolenya.
+- Harus selalu ada minimal satu admin aktif.
+- Login salah 5 kali berturut-turut mengunci username selama 5 menit.
+
+5. ENDPOINT UNTUK UNITY
+-----------------------
+- POST /api/auth/login      login teknisi, mengembalikan token dan daftar izin
+- POST /api/stock-logs      catat perubahan stok (butuh token, izin stock.update)
+
+Pengaturan permainan (max soal, poin, poin menang) TIDAK di sini.
+Itu diatur dari panel Unity dan disimpan di server-quiz-tempe.
+
+6. YANG JANGAN DILAKUKAN (BIAR DATA TIDAK HILANG)
 ------------------------------------------------
 - Jangan hapus / timpa prisma/dev.db
 - Jangan jalankan:
     npx prisma migrate reset
     npx prisma db push --force-reset
-- Tidak perlu jalankan "node seed.js" di PC baru
-  (seed hanya untuk isi awal, dan sifatnya upsert/aman,
-  tapi tidak perlu jika dev.db sudah dibawa)
+- Seed (node seed.js) aman dijalankan ulang: hanya membuat data yang belum ada,
+  dan tidak mengubah user, role, kategori, atau soal yang sudah diubah.
+  Tidak perlu dijalankan kalau dev.db sudah dibawa.
 - Sebelum copy/rar/compress project, STOP dulu servernya
   (Ctrl+C), kalau tidak dev.db akan di-lock dan WinRAR error:
   "Cannot open ... dev.db ... being used by another process"
 
-5. TROUBLESHOOTING
------------------
+7. TROUBLESHOOTING
+------------------
 a. WinRAR: Cannot open prisma/dev.db, being used by another process
    -> Server masih jalan. Solusi:
       tasklist | findstr node
@@ -93,12 +131,21 @@ c. Error PrismaClient ... did not initialize / MODULE_NOT_FOUND
       npm install
       npx prisma generate
 
-d. Halaman tidak bisa dibuka / login gagal
+d. EPERM: operation not permitted, rename ... query_engine-windows.dll.node
+   -> Server sedang berjalan dan mengunci file engine Prisma.
+      Hentikan server (Ctrl+C atau taskkill), lalu jalankan
+      npx prisma generate lagi.
+
+e. "JWT_SECRET belum diisi di .env" saat server dijalankan
+   -> Isi JWT_SECRET di .env (lihat bagian 2).
+
+f. Halaman tidak bisa dibuka / login gagal
    -> Cek .env ada dan PORT=3011
    -> Cek server masih jalan (harus ada log "Server running on port 3011")
    -> Cek prisma/dev.db ada dan ukurannya tidak 0 KB
+   -> Kalau baru pindah PC: jalankan npx prisma migrate deploy
 
-e. Cek isi database langsung:
+g. Cek isi database langsung:
      npx prisma studio
 
 Selesai.

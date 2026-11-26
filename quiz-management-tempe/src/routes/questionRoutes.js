@@ -3,9 +3,9 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const questionController = require('../controllers/questionController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 
-router.use(protect);
+router.use(protect, requirePermission('quiz.manage'));
 
 // Configure Multer for local uploads
 const storage = multer.diskStorage({

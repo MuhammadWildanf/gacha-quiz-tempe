@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Kategori - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 30px; max-width: 600px; box-shadow: var(--shadow-lg); }
+        .btn-group { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--glass-border); width: auto; padding: 12px 24px; box-shadow: none; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; border-radius: var(--border-radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <%- include('../partials/sidebar', { activePath: 'categories' }) %>
+
+        <main class="main-content">
+            <header class="header-container">
+                <div><h1 class="page-title">Edit Kategori</h1></div>
+            </header>
+
+            <div class="form-card">
+                <% if (error) { %>
+                    <div class="error-message"><%= error %></div>
+                <% } %>
+
+                <form action="/admin/categories/edit/<%= category.id %>" method="POST">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Nama Kategori</label>
+                        <input type="text" id="name" name="name" class="form-input" value="<%= category.name %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nameEn" class="form-label">Nama (English, opsional)</label>
+                        <input type="text" id="nameEn" name="nameEn" class="form-input" value="<%= category.nameEn || '' %>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Deskripsi (opsional)</label>
+                        <textarea id="description" name="description" class="form-input" rows="3"><%= category.description || '' %></textarea>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn" style="width: auto; padding: 12px 30px;">Simpan Perubahan</button>
+                        <a href="/admin/categories" class="btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

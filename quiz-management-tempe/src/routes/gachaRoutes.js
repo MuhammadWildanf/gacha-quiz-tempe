@@ -1,13 +1,11 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const gachaController = require('../controllers/gachaController');
 
 const adminRouter = express.Router();
-adminRouter.get('/gacha', protect, gachaController.getSettings);
-adminRouter.post('/gacha', protect, gachaController.postSettings);
+adminRouter.get('/gacha', protect, requirePermission('gacha.settings'), gachaController.getSettings);
 
 const apiRouter = express.Router();
-apiRouter.get('/gacha/settings', gachaController.getApiSettings);
 apiRouter.post('/gacha/log', gachaController.postLog);
 
 module.exports = { adminRouter, apiRouter };
