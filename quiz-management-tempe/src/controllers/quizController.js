@@ -1,31 +1,43 @@
-const prisma = require('../config/database');
 const path = require('path');
 const fs = require('fs');
+const { paginate, parsePage } = require('../helpers/pagination');
+const prisma = require('../config/database');
 
-// List Quizzes
 const getQuizzes = async (req, res) => {
     try {
-        const quizzes = await prisma.quiz.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                _count: {
-                    select: { questions: true }
-                }
-            }
+        const { page = 1, limit = 20 } = parsePage(req);
+        const offset = (page - 1) * limit;
+        
+        const [quizzes, total] = await Promise.all([
+            prisma.quiz.findMany({
+                orderBy: { createdAt: 'desc' },
+                skip: offset,
+                take: limit,
+                include: { _count: { select: { questions: true } } }
+            }),
+            prisma.quiz.count()
+        ]);
+
+        const meta = paginate(total, page, limit);
+        
+        res.render('quizzes/index', {
+            quizzes,
+            path: 'quizzes',
+            success: req.query.success || null,
+            error: req.query.error || null,
+            meta,
+            filters: { page, limit }
         });
-        res.render('quizzes/index', { quizzes, path: 'quizzes' });
     } catch (error) {
         console.error('getQuizzes error:', error);
         res.status(500).send('Internal Server Error');
     }
 };
 
-// Create Form
 const getCreateQuiz = (req, res) => {
     res.render('quizzes/create', { path: 'quizzes' });
 };
 
-// Save New Quiz
 const postCreateQuiz = async (req, res) => {
     const { title, description, status } = req.body;
 
@@ -38,28 +50,21 @@ const postCreateQuiz = async (req, res) => {
         }
 
         await prisma.quiz.create({
-            data: {
-                title,
-                description,
-                status: status === 'true' || status === true
-            }
+            data: { title, description, status: status === 'true' || status === true }
         });
 
-        res.redirect('/admin/quizzes');
+        res.redirect('/admin/quizzes?success=created');
     } catch (error) {
         console.error('postCreateQuiz error:', error);
         res.status(500).send('Internal Server Error');
     }
 };
 
-// Edit Form
 const getEditQuiz = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const quiz = await prisma.quiz.findUnique({
-            where: { id: parseInt(id) }
-        });
+        const quiz = await prisma.quiz.findUnique({ where: { id: parseInt(id) } });
 
         if (!quiz) {
             return res.status(404).send('Quiz not found');
@@ -72,7 +77,6 @@ const getEditQuiz = async (req, res) => {
     }
 };
 
-// Update Quiz
 const postEditQuiz = async (req, res) => {
     const { id } = req.params;
     const { title, description, status } = req.body;
@@ -81,7 +85,6 @@ const postEditQuiz = async (req, res) => {
         const existing = await prisma.quiz.findUnique({ where: { id: parseInt(id) } });
         if (!existing) return res.status(404).send('Quiz not found');
 
-        // Jika title diisi gunakan yang baru, jika kosong tetap pertahankan title lama
         const finalTitle = (title && title.trim()) ? title.trim() : existing.title;
 
         await prisma.quiz.update({
@@ -93,46 +96,28 @@ const postEditQuiz = async (req, res) => {
             }
         });
 
-        res.redirect('/admin/quizzes');
+        res.redirect('/admin/quizzes?success=updated');
     } catch (error) {
         console.error('postEditQuiz error:', error);
         res.status(500).send('Internal Server Error');
     }
 };
 
-// Delete Quiz
 const deleteQuiz = async (req, res) => {
     const { id } = req.params;
 
     try {
-        // Find if there are questions inside
-        const questions = await prisma.question.findMany({
-            where: { quizId: parseInt(id) }
-        });
-
-        // Delete questions and answers first
+        const questions = await prisma.question.findMany({ where: { quizId: parseInt(id) } });
         for (const question of questions) {
             if (question.image) {
                 const filePath = path.join(__dirname, '../../', question.image);
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
-                }
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
             }
-            await prisma.answer.deleteMany({
-                where: { questionId: question.id }
-            });
+            await prisma.answer.deleteMany({ where: { questionId: question.id } });
         }
-
-        await prisma.question.deleteMany({
-            where: { quizId: parseInt(id) }
-        });
-
-        // Delete the quiz
-        await prisma.quiz.delete({
-            where: { id: parseInt(id) }
-        });
-
-        res.redirect('/admin/quizzes');
+        await prisma.question.deleteMany({ where: { quizId: parseInt(id) } });
+        await prisma.quiz.delete({ where: { id: parseInt(id) } });
+        res.redirect('/admin/quizzes?success=deleted');
     } catch (error) {
         console.error('deleteQuiz error:', error);
         res.status(500).send('Internal Server Error');

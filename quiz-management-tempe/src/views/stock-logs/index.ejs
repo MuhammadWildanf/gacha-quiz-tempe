@@ -74,7 +74,7 @@
                                     <td style="color: var(--text-muted);"><%= new Date(l.createdAt).toLocaleString('id-ID') %></td>
                                     <td class="mono"><%= l.machineId %></td>
                                     <td style="font-weight: 600;"><%= l.username %></td>
-                                    <td><%= l.action === 'MANUAL_REFILL' ? 'Isi ulang' : 'Set manual' %></td>
+                                    <td><%= ({ MANUAL_SET: 'Set manual', MANUAL_REFILL: 'Isi ulang', DISPENSE: 'Hadiah keluar', DISPENSE_STALE: 'Hadiah (diabaikan, versi lama)' })[l.action] || l.action %></td>
                                     <td class="text-center"><%= l.oldValue ?? '-' %></td>
                                     <td class="text-center"><%= l.newValue %></td>
                                     <td class="text-center <%= diff > 0 ? 'delta-up' : (diff < 0 ? 'delta-down' : '') %>">

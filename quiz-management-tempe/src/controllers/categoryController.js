@@ -1,3 +1,4 @@
+const { paginate, parsePage } = require('../helpers/pagination');
 const prisma = require('../config/database');
 
 function readForm(body) {
@@ -14,15 +15,28 @@ function isUniqueError(error) {
 
 const listCategories = async (req, res) => {
     try {
-        const categories = await prisma.category.findMany({
-            orderBy: { name: 'asc' },
-            include: { _count: { select: { questions: true } } }
-        });
+        const { page = 1, limit = 20 } = parsePage(req);
+        const offset = (page - 1) * limit;
+        
+        const [categories, total] = await Promise.all([
+            prisma.category.findMany({
+                orderBy: { name: 'asc' },
+                skip: offset,
+                take: limit,
+                include: { _count: { select: { questions: true } } }
+            }),
+            prisma.category.count()
+        ]);
+
+        const meta = paginate(total, page, limit);
+        
         res.render('categories/index', {
             categories,
+            path: 'categories',
             success: req.query.success || null,
             error: req.query.error || null,
-            path: 'categories'
+            meta,
+            filters: { page, limit }
         });
     } catch (error) {
         console.error('listCategories error:', error.message);

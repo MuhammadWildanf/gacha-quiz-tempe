@@ -29,11 +29,20 @@ Contoh .env yang benar:
   DATABASE_URL="file:./dev.db"
   JWT_SECRET="isi-dengan-string-acak-panjang"
   PORT=3011
+  SERVER_GACHA_URL=http://localhost:3012
+  INTERNAL_API_KEY="hex-acak-64-karakter"
 
 JWT_SECRET WAJIB diisi dengan string acak yang panjang (minimal 32 karakter).
 Jangan pakai contoh dari dokumen ini. Server tidak mau jalan kalau JWT_SECRET kosong.
 Nilai JWT_SECRET di sini HARUS sama dengan JWT_SECRET di .env server-quiz-tempe
 (server Gacha), karena token login dibuat di sini dan diperiksa di sana.
+
+INTERNAL_API_KEY adalah kunci antar-server (bukan untuk browser). Nilainya HARUS
+sama persis dengan INTERNAL_API_KEY di .env server-quiz-tempe. Buat dengan:
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+SERVER_GACHA_URL = alamat server-quiz-tempe. Dipakai untuk mengirim stok terbaru
+ke mesin saat admin/operator menyimpan stok dari halaman Mesin & Stok.
 
 3. LANGKAH INSTALASI
 --------------------
@@ -74,7 +83,7 @@ e. Login pertama kali (akun admin dari seed.js):
 Ada dua role bawaan:
 
 - admin    : semua menu dan semua izin. Tidak bisa dibatasi.
-- operator : hanya menu Quiz dan Kategori, serta ubah stok dari Unity.
+- operator : menu Quiz, Kategori, dan Mesin & Stok (ubah stok per mesin).
 
 Menu yang hanya untuk admin:
 - Dashboard
@@ -85,15 +94,46 @@ Menu yang hanya untuk admin:
 - Roles (atur izin tiap role; role admin dikunci)
 - Audit Log (riwayat perubahan user dan role: siapa, kapan, apa yang berubah)
 
+Menu Mesin & Stok (admin dan operator):
+- Menampilkan stok resmi tiap mesin (gacha-001, gacha-002, gacha-003).
+- Isi angka stok sesuai isi tabung fisik, lalu Simpan.
+- Setiap simpan menaikkan versi dan langsung mengirim stok ke mesin yang
+  sedang terhubung. Kalau mesin sedang mati, nilainya dipakai saat mesin
+  tersambung lagi.
+- Hadiah yang keluar dari mesin otomatis mengurangi stok di halaman ini dan
+  tercatat di Stock Logs sebagai "Hadiah keluar".
+
 Pengaman:
 - Akun sendiri tidak bisa dihapus, dinonaktifkan, atau diturunkan rolenya.
 - Harus selalu ada minimal satu admin aktif.
 - Login salah 5 kali berturut-turut mengunci username selama 5 menit.
 
-5. ENDPOINT UNTUK UNITY
------------------------
+5. ENDPOINT UNTUK UNITY DAN ANTAR-SERVER
+----------------------------------------
+Untuk Unity (butuh token login):
 - POST /api/auth/login      login teknisi, mengembalikan token dan daftar izin
-- POST /api/stock-logs      catat perubahan stok (butuh token, izin stock.update)
+- POST /api/stock-logs      catat perubahan stok manual (butuh izin stock.update)
+
+Antar-server (butuh header X-Internal-Key, JANGAN dibuka ke browser):
+- GET  /api/internal/machines/:machineId/stock   stok resmi + versi
+- POST /api/internal/stock-events                hadiah keluar (-1) dari mesin
+
+Alur stok:
+- Unity tersambung ke WebSocket server-quiz-tempe lalu mengirim "hello".
+- server-quiz-tempe mengambil stok resmi dari sini dan mengirim "stock_state".
+- Setiap bola keluar, Unity mengirim "stock_event" (-1). server-quiz-tempe
+  meneruskannya ke POST /api/internal/stock-events, lalu membalas "stock_ack".
+- Event yang belum di-ack disimpan di mesin dan dikirim ulang. eventId mencegah
+  hitungan ganda. Event dari versi lama diabaikan karena admin sudah menghitung
+  stok fisik setelahnya.
+- Saat stok disimpan dari halaman Mesin & Stok, web mengirim "stock_set" ke
+  mesin yang sedang terhubung lewat server-quiz-tempe.
+
+Identitas mesin dibaca dari machine.json di samping file .exe:
+  { "machineId": "gacha-001", "dispenserPort": "COM3" }
+Saat di Unity Editor, letakkan machine.json di folder project (sebelah Assets).
+machineId harus salah satu dari gacha-001, gacha-002, gacha-003 (lihat
+src/config/machines.js).
 
 Pengaturan permainan (max soal, poin, poin menang) TIDAK di sini.
 Itu diatur dari panel Unity dan disimpan di server-quiz-tempe.

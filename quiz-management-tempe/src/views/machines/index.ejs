@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesin & Stok - Quiz Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .machine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .machine-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow-lg); }
+        .machine-id { font-family: monospace; font-size: 18px; color: var(--accent-cyan); font-weight: 700; }
+        .stock-value { font-size: 48px; font-weight: 700; line-height: 1.1; margin: 12px 0 4px; }
+        .stock-note { font-size: 13px; color: var(--text-muted); }
+        .stock-form { display: flex; gap: 10px; margin-top: 18px; align-items: center; }
+        .stock-form input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.03); color: var(--text-main); }
+        .stock-form button { width: auto; padding: 10px 18px; }
+        .flash-ok { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .flash-err { background: rgba(255,0,127,0.1); border: 1px solid rgba(255,0,127,0.3); color: var(--accent-pink); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <%- include('../partials/sidebar', { activePath: 'machines' }) %>
+
+        <main class="main-content">
+            <header class="header-container">
+                <div>
+                    <h1 class="page-title">Mesin & Stok</h1>
+                </div>
+            </header>
+
+            <% if (success) { %><div class="flash-ok"><%= success %></div><% } %>
+            <% if (error) { %><div class="flash-err"><%= error %></div><% } %>
+
+            <div class="machine-grid">
+                <% machines.forEach(m => { %>
+                    <div class="machine-card">
+                        <div class="machine-id"><%= m.machineId %></div>
+                        <div class="stock-value"><%= m.stock %></div>
+                        <div class="stock-note">
+                            <% if (m.version === 0) { %>
+                                Belum pernah diatur. Isi stok sesuai isi tabung.
+                            <% } else { %>
+                                Versi <%= m.version %> · terakhir diubah <%= new Date(m.updatedAt).toLocaleString('id-ID') %>
+                            <% } %>
+                        </div>
+
+                        <form class="stock-form" action="/admin/machines/<%= m.machineId %>/stock" method="POST">
+                            <input type="number" name="stock" min="0" step="1" value="<%= m.stock %>" required>
+                            <button type="submit" class="btn">Simpan</button>
+                        </form>
+                    </div>
+                <% }) %>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

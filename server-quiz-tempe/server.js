@@ -23,7 +23,12 @@ const PORT = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 6553
 const VendorClient = require("./vendor-client");
 const settings = require("./settings");
 const gameConfig = require("./game-config");
+const stockBridge = require("./stock-bridge");
 const { requirePermission } = require("./auth");
+
+stockBridge.init(wss);
+app.use("/api/internal", stockBridge.router);
+
 const { loadLedger, saveLedger, checkWritable, LEDGER_FILE } = require("./ledger");
 const { renderDashboard } = require("./views/dashboard");
 
@@ -167,6 +172,16 @@ wss.on("connection", (ws) => {
             // ----------------------------------------
             // EVENT: Mesin Unity scan QR
             // ----------------------------------------
+            if (data.type === "hello") {
+                await stockBridge.onHello(ws, String(data.machineId || ""));
+                return;
+            }
+
+            if (data.type === "stock_event") {
+                await stockBridge.onStockEvent(ws, data);
+                return;
+            }
+
             if (data.type === "scan_qr") {
                 const scannedQr = String(data.qrCode || "").trim();
                 const machineId = String(data.machineId || "UNKNOWN_DEVICE");

@@ -48,6 +48,14 @@
             </a>
         </li>
         <% } %>
+        <% if (hasPerm('stock.update')) { %>
+        <li>
+            <a href="/admin/machines" class="sidebar-link <%= currentPath === 'machines' ? 'active' : '' %>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                <span>Mesin & Stok</span>
+            </a>
+        </li>
+        <% } %>
         <% if (hasPerm('stocklog.view')) { %>
         <li>
             <a href="/admin/stock-logs" class="sidebar-link <%= currentPath === 'stock-logs' ? 'active' : '' %>">

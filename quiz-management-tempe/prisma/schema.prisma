@@ -47,7 +47,16 @@ model StockLog {
   action    String
   oldValue  Int?
   newValue  Int
+  eventId   String?  @unique
   createdAt DateTime @default(now())
+}
+
+// Stok resmi per mesin. version = 0 berarti belum pernah diatur dari web.
+model MachineStock {
+  machineId String   @id
+  stock     Int      @default(0)
+  version   Int      @default(0)
+  updatedAt DateTime @updatedAt
 }
 
 // 1. Model Category Baru

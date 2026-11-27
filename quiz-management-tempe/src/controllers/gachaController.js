@@ -10,6 +10,7 @@ const getSettings = async (req, res) => {
 
         res.render('gacha/settings', {
             logs,
+            success: null,
             path: 'gacha'
         });
     } catch (error) {

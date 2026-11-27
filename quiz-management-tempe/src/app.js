@@ -17,6 +17,8 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const { adminRouter: stockLogAdminRoutes, apiRouter: stockLogApiRoutes } = require('./routes/stockLogRoutes');
 const authApiRoutes = require('./routes/authApiRoutes');
 const auditRoutes = require('./routes/auditRoutes');
+const machineRoutes = require('./routes/machineRoutes');
+const internalRoutes = require('./routes/internalRoutes');
 
 const app = express();
 
@@ -59,6 +61,8 @@ app.use('/admin', roleRoutes);
 app.use('/admin', categoryRoutes);
 app.use('/admin', stockLogAdminRoutes);
 app.use('/admin', auditRoutes);
+app.use('/admin', machineRoutes);
+app.use('/api/internal', internalRoutes);
 app.use('/api', apiRoutes);
 app.use('/api', gachaApiRoutes);
 app.use('/api', boothApiRoutes);

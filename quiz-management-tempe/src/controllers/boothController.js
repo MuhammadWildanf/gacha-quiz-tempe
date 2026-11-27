@@ -1,16 +1,31 @@
+const { paginate, parsePage } = require('../helpers/pagination');
 const prisma = require('../config/database');
 
 const getBooths = async (req, res) => {
     try {
-        const booths = await prisma.booth.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                _count: {
-                    select: { gachaLogs: true, answerLogs: true }
-                }
-            }
+        const { page = 1, limit = 20 } = parsePage(req);
+        const offset = (page - 1) * limit;
+        
+        const [booths, total] = await Promise.all([
+            prisma.booth.findMany({
+                orderBy: { createdAt: 'desc' },
+                skip: offset,
+                take: limit,
+                include: { _count: { select: { gachaLogs: true, answerLogs: true } } }
+            }),
+            prisma.booth.count()
+        ]);
+
+        const meta = paginate(total, page, limit);
+        
+        res.render('booths/index', {
+            booths,
+            path: 'booths',
+            success: req.query.success || null,
+            error: req.query.error || null,
+            meta,
+            filters: { page, limit }
         });
-        res.render('booths/index', { booths, path: 'booths', success: req.query.success || null });
     } catch (error) {
         console.error('getBooths error:', error);
         res.status(500).send('Internal Server Error');
@@ -35,10 +50,7 @@ const postCreateBooth = async (req, res) => {
         }
 
         await prisma.booth.create({
-            data: {
-                name: name.trim(),
-                description: description ? description.trim() : null
-            }
+            data: { name: name.trim(), description: description ? description.trim() : null }
         });
 
         res.redirect('/admin/booths?success=created');
